@@ -20,3 +20,11 @@ type ChunkedKeyPayload struct {
 	Value io.ReadCloser
 	Size  int64
 }
+
+func (p *ChunkedKeyPayload) Close() error {
+	return p.Value.Close()
+}
+
+func (p *ChunkedKeyPayload) Read(r []byte) (n int, err error) {
+	return p.Value.Read(r)
+}
