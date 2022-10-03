@@ -35,7 +35,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKe
 	output, _ := json.Marshal(info)
 	previousChunks := fmt.Sprintf("%s/chunks/v%d/", key, info.Version - 1)
 	tx := cli.Client.Txn(ctx).Then(
-		clientv3.OpPut(fmt.Sprintf("%/info", key), string(output)),
+		clientv3.OpPut(fmt.Sprintf("%s/info", key), string(output)),
 		clientv3.OpDelete(previousChunks, clientv3.WithRange(clientv3.GetPrefixRangeEnd(previousChunks))),
 	)
 
