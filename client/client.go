@@ -1,15 +1,17 @@
 package client
 
 import (
+	"time"
+
 	"google.golang.org/grpc/codes"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type EtcdClient struct {
-	Client *clientv3.Client
-	Retries uint64
-	RequestTimeout uint64
+	Client         *clientv3.Client
+	Retries        uint64
+	RequestTimeout time.Duration
 }
 
 func (cli *EtcdClient) Close() {

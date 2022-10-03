@@ -76,7 +76,7 @@ func (cli *EtcdClient) DiffBetweenPrefixes(srcPrefix string, dstPrefix string) (
 }
 
 func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff keymodels.KeysDiff, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	ops := []clientv3.Op{}

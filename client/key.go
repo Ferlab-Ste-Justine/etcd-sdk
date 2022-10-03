@@ -9,7 +9,7 @@ import (
 )
 
 func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.Put(ctx, key, val)
@@ -29,7 +29,7 @@ func (cli *EtcdClient) PutKey(key string, val string) error {
 }
 
 func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (keymodels.KeyInfo, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	var err error
@@ -73,7 +73,7 @@ func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (keymodels.K
 }
 
 func (cli *EtcdClient) deleteKeyWithRetries(key string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.Delete(ctx, key)

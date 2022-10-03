@@ -9,7 +9,7 @@ import (
 )
 
 func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (map[string]keymodels.KeyInfo, int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	keys := make(map[string]keymodels.KeyInfo)
@@ -44,7 +44,7 @@ func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]keym
 }
 
 func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string , retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.Delete(ctx, key, clientv3.WithRange(rangeEnd))

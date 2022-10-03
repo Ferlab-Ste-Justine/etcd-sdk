@@ -6,28 +6,29 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func Connect(
-	userCertPath string, 
-	userKeyPath string,
-	username string,
-	password string, 
-	caCertPath string, 
-	etcdEndpoints string, 
-	connectionTimeout uint64,
-	requestTimeout uint64,
-	retries uint64,
-	) (*EtcdClient, error) {
+type EtcdClientOptions struct {
+	ClientCertPath    string
+	ClientKeyPath     string
+	CaCertPath        string
+	Username          string
+	Password          string
+	EtcdEndpoints     []string
+	ConnectionTimeout time.Duration
+	RequestTimeout    time.Duration
+	Retries           uint64
+}
+
+func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 	tlsConf := &tls.Config{}
 
 	//User credentials
-	if username == "" {
-		certData, err := tls.LoadX509KeyPair(userCertPath, userKeyPath)
+	if opts.Username == "" {
+		certData, err := tls.LoadX509KeyPair(opts.ClientCertPath, opts.ClientKeyPath)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Failed to load user credentials: %s", err.Error()))
 		}
@@ -37,7 +38,7 @@ func Connect(
 	(*tlsConf).InsecureSkipVerify = false
 	
 	//CA cert
-	caCertContent, err := ioutil.ReadFile(caCertPath)
+	caCertContent, err := ioutil.ReadFile(opts.CaCertPath)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to read root certificate file: %s", err.Error()))
 	}
@@ -52,19 +53,19 @@ func Connect(
 	var cli *clientv3.Client
 	var connErr error
 
-	if username == "" {
+	if opts.Username == "" {
 		cli, connErr = clientv3.New(clientv3.Config{
-			Endpoints:   strings.Split(etcdEndpoints, ","),
+			Endpoints:   opts.EtcdEndpoints,
 			TLS:         tlsConf,
-			DialTimeout: time.Duration(connectionTimeout) * time.Second,
+			DialTimeout: opts.ConnectionTimeout,
 		})
 	} else {
 		cli, connErr = clientv3.New(clientv3.Config{
-			Username: username,
-			Password: password,
-			Endpoints:   strings.Split(etcdEndpoints, ","),
+			Username:    opts.Username,
+			Password:    opts.Password,
+			Endpoints:   opts.EtcdEndpoints,
 			TLS:         tlsConf,
-			DialTimeout: time.Duration(connectionTimeout) * time.Second,
+			DialTimeout: opts.ConnectionTimeout,
 		})
 	}
 	
@@ -74,7 +75,7 @@ func Connect(
 	
 	return &EtcdClient{
 		Client:         cli,
-		Retries:        retries,
-		RequestTimeout: requestTimeout,
+		Retries:        opts.Retries,
+		RequestTimeout: opts.RequestTimeout,
 	}, nil
 }
