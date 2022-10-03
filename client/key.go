@@ -35,11 +35,18 @@ func (cli *EtcdClient) PutKey(key string, val string) error {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
 
-func (cli *EtcdClient) getKeyWithRetries(key string, retries int) (KeyInfo, bool, error) {
+func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries int) (KeyInfo, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
 	defer cancel()
 
-	getRes, err := cli.Client.Get(ctx, key)
+	var err error
+	var getRes *clientv3.GetResponse
+
+	if revision == -1 {
+		getRes, err = cli.Client.Get(ctx, key)
+	} else {
+		getRes, err = cli.Client.Get(ctx, key, clientv3.WithRev(revision))
+	}
 
 	if err != nil {
 		etcdErr, ok := err.(rpctypes.EtcdError)
@@ -52,7 +59,7 @@ func (cli *EtcdClient) getKeyWithRetries(key string, retries int) (KeyInfo, bool
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.getKeyWithRetries(key, retries - 1)
+		return cli.getKeyWithRetries(key, revision, retries - 1)
 	}
 
 	if len(getRes.Kvs) == 0 {
@@ -70,7 +77,11 @@ func (cli *EtcdClient) getKeyWithRetries(key string, retries int) (KeyInfo, bool
 }
 
 func (cli *EtcdClient) GetKey(key string) (KeyInfo, bool, error) {
-	return cli.getKeyWithRetries(key, cli.Retries)
+	return cli.getKeyWithRetries(key, -1, cli.Retries)
+}
+
+func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (KeyInfo, bool, error) {
+	return cli.getKeyWithRetries(key, revision, cli.Retries)
 }
 
 func (cli *EtcdClient) deleteKeyWithRetries(key string, retries int) error {
