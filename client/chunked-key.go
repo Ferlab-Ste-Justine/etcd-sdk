@@ -51,7 +51,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKe
 }
 
 func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
-	cMaxSize := int64(1024)
+	cMaxSize := int64(1024*1024)
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key.Key)
 	if infoErr != nil {
 		return infoErr
@@ -166,7 +166,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 	}
 
 	var buffer bytes.Buffer
-	buffer.Grow(1024)
+	buffer.Grow(1024*1024)
 	reader := ChunksReader{
 		Client: cli,
 		Key: key,
