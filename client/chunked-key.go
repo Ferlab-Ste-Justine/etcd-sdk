@@ -7,19 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
+	"time"
 
 	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo, int64, error) {
-	info, exists, err := cli.GetKey(fmt.printf("%s/info", key))
+	info, exists, err := cli.GetKey(fmt.Sprintf("%s/info", key))
 	if err != nil || (!exists) {
 		return nil, 0, err
 	}
 
 	cKeyInfo := keymodels.ChunkedKeyInfo{}
-	unmarshalErr := json.Unmarshal([]byte(info), &cKeyInfo)
+	unmarshalErr := json.Unmarshal([]byte(info.Value), &cKeyInfo)
 	if unmarshalErr != nil {
 		return nil, info.ModRevision, unmarshalErr
 	}
@@ -27,22 +28,22 @@ func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo,
 	return &cKeyInfo, info.ModRevision, nil
 }
 
-func (cli *EtcdClient) persistVersionChange(key string, info ChunkedKeyInfo, retries int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
+func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKeyInfo, retries uint64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
 	defer cancel()
 	
-	var output []byte
 	output, _ := json.Marshal(info)
-	previousChunks := fmt.printf("%s/chunks/v%d/", key, info.Version - 1)
-	tx := conn.Client.Txn(ctx).Then(
-		clientv3.OpPut(fmt.printf("%/info", key), string(output)),
-		clientv3.OpDelete(previousChunks, clientv3.GetPrefixRangeEnd(previousChunks)),
+	previousChunks := fmt.Sprintf("%s/chunks/v%d/", key, info.Version - 1)
+	tx := cli.Client.Txn(ctx).Then(
+		clientv3.OpPut(fmt.Sprintf("%/info", key), string(output)),
+		clientv3.OpDelete(previousChunks, clientv3.WithRange(clientv3.GetPrefixRangeEnd(previousChunks))),
 	)
 
 	_, err := tx.Commit()
 	if err != nil {
-		if retries > 0 {
-			return cli.persistChunkedKeyInfo(key, info, retries - 1)
+		if shouldRetry(err, retries) {
+			time.Sleep(100 * time.Millisecond)
+			return cli.persistVersionChange(key, info, retries - 1)
 		}
 	}
 
@@ -50,7 +51,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info ChunkedKeyInfo, ret
 }
 
 func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
-	cMaxSize := 1024
+	cMaxSize := int64(1024)
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key.Key)
 	if infoErr != nil {
 		return infoErr
@@ -58,7 +59,7 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	version := keyInfo.Version
 
 	//Cleanup before write in case a previous write attempt aborted in error
-	clearErr := cli.DeletePrefix(fmt.printf("%s/chunks/v%d/", key.Key, version + 1))
+	clearErr := cli.DeletePrefix(fmt.Sprintf("%s/chunks/v%d/", key.Key, version + 1))
 	if clearErr != nil {
 		return clearErr
 	}
@@ -70,11 +71,11 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	}
 
 	buf := make([]byte, cMaxSize)
-	for idx := 0; idx < chunks; idx++ {
-		cKey := fmt.printf("%s/chunks/v%d/%d", key.Key, version + 1, idx)
+	for idx := int64(0); idx < chunks; idx++ {
+		cKey := fmt.Sprintf("%s/chunks/v%d/%d", key.Key, version + 1, idx)
 
 		if idx < (chunks -1) || (key.Size % cMaxSize) == 0 {
-			readErr := io.ReadFull(key.Value, buf)
+			_, readErr := io.ReadFull(key.Value, buf)
 			if readErr != nil {
 				return readErr
 			}
@@ -84,7 +85,7 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 				return putErr
 			}
 		} else {
-			_, readErr := io.ReadAtLeast(key.Value, buf, key.Size % cMaxSize)
+			_, readErr := io.ReadAtLeast(key.Value, buf, int(key.Size % cMaxSize))
 			if readErr != nil {
 				return readErr
 			}
@@ -97,14 +98,14 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	}
 
 	//update chunk info and delete previous version chunks as single transaction
-	return cli.persistVersionChange(key, keymodels.ChunkedKeyInfo{
+	return cli.persistVersionChange(key.Key, keymodels.ChunkedKeyInfo{
 		Size: key.Size,
 		Count: chunks,
 		Version: version + 1,
 	}, cli.Retries)
 }
 
-type ChunksReader {
+type ChunksReader struct {
 	Client   *EtcdClient
 	Key      string
 	Index    int64
@@ -115,7 +116,8 @@ type ChunksReader {
 func (r *ChunksReader) Close() error {
 	r.Client = nil
 	r.Buffer = nil
-	r.Snapshot = ChunkedKeySnapshot{}
+	r.Snapshot = keymodels.ChunkedKeySnapshot{}
+	return nil
 }
 
 func (r *ChunksReader) Read(p []byte) (n int, err error) {
@@ -129,13 +131,13 @@ func (r *ChunksReader) Read(p []byte) (n int, err error) {
 	}
 
 	
-	chunkKey := fmt.printf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
+	chunkKey := fmt.Sprintf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
 	kInfo, kExists, kErr := r.Client.GetKeyAtRevision(chunkKey, r.Snapshot.Revision)
 	if kErr != nil {
 		return 0, kErr
 	}
 	if !kExists {
-		return errors.New(fmt.Sprintf("%s chunk key not found at revision %d", chunkKey, r.Snapshot.Revision))
+		return 0, errors.New(fmt.Sprintf("%s chunk key not found at revision %d", chunkKey, r.Snapshot.Revision))
 	}
 
 	r.Index += 1
@@ -167,7 +169,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 		Snapshot: keymodels.ChunkedKeySnapshot {
 			Info: *cKeyInfo,
 			Revision: revision,
-		}
+		},
 	}
 
 	return &reader, nil
@@ -176,7 +178,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, error) {
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key)
 	if infoErr != nil || keyInfo == nil {
-		return keyInfo, infoErr
+		return nil, infoErr
 	}
 
 	reader, rErr := cli.newChunksReader(key)
@@ -186,8 +188,8 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 
 	payload := keymodels.ChunkedKeyPayload{
 		Key: key,
-		Value: reader
-		Size: reader.Snapshot.Info.Size
+		Value: reader,
+		Size: reader.Snapshot.Info.Size,
 	}
 
 	return &payload, nil

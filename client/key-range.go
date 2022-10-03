@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
-	"google.golang.org/grpc/codes"
-	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -18,12 +16,7 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 
 	res, err := cli.Client.Get(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
-		etcdErr, ok := err.(rpctypes.EtcdError)
-		if !ok {
-			return keys, -1, err
-		}
-		
-		if etcdErr.Code() != codes.Unavailable || retries == 0 {
+		if !shouldRetry(err, retries) {
 			return keys, -1, err
 		}
 
@@ -50,18 +43,13 @@ func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]keym
 	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
 
-func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string , retries int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
+func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string , retries uint64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
 	defer cancel()
 
 	_, err := cli.Client.Delete(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
-		etcdErr, ok := err.(rpctypes.EtcdError)
-		if !ok {
-			return err
-		}
-		
-		if etcdErr.Code() != codes.Unavailable || retries <= 0 {
+		if !shouldRetry(err, retries) {
 			return err
 		}
 

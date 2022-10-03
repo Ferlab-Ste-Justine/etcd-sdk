@@ -5,23 +5,16 @@ import (
 	"time"
 
 	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
-	"google.golang.org/grpc/codes"
-	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
+func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
 	defer cancel()
 
 	_, err := cli.Client.Put(ctx, key, val)
 	if err != nil {
-		etcdErr, ok := err.(rpctypes.EtcdError)
-		if !ok {
-			return err
-		}
-		
-		if etcdErr.Code() != codes.Unavailable || retries <= 0 {
+		if !shouldRetry(err, retries) {
 			return err
 		}
 
@@ -35,8 +28,8 @@ func (cli *EtcdClient) PutKey(key string, val string) error {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
 
-func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries int) (KeyInfo, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
+func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (keymodels.KeyInfo, bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
 	defer cancel()
 
 	var err error
@@ -49,13 +42,8 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries int
 	}
 
 	if err != nil {
-		etcdErr, ok := err.(rpctypes.EtcdError)
-		if !ok {
-			return KeyInfo{}, false, err
-		}
-		
-		if etcdErr.Code() != codes.Unavailable || retries <= 0 {
-			return KeyInfo{}, false, err
+		if !shouldRetry(err, retries) {
+			return keymodels.KeyInfo{}, false, err
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -63,10 +51,10 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries int
 	}
 
 	if len(getRes.Kvs) == 0 {
-		return KeyInfo{}, false, nil
+		return keymodels.KeyInfo{}, false, nil
 	}
 
-	return KeyInfo{
+	return keymodels.KeyInfo{
 		Key:            key,
 		Value:          string(getRes.Kvs[0].Value),
 		Version:        getRes.Kvs[0].Version,
@@ -76,26 +64,21 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries int
 	}, true, nil
 }
 
-func (cli *EtcdClient) GetKey(key string) (KeyInfo, bool, error) {
+func (cli *EtcdClient) GetKey(key string) (keymodels.KeyInfo, bool, error) {
 	return cli.getKeyWithRetries(key, -1, cli.Retries)
 }
 
-func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (KeyInfo, bool, error) {
+func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (keymodels.KeyInfo, bool, error) {
 	return cli.getKeyWithRetries(key, revision, cli.Retries)
 }
 
-func (cli *EtcdClient) deleteKeyWithRetries(key string, retries int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.Timeout)*time.Second)
+func (cli *EtcdClient) deleteKeyWithRetries(key string, retries uint64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
 	defer cancel()
 
 	_, err := cli.Client.Delete(ctx, key)
 	if err != nil {
-		etcdErr, ok := err.(rpctypes.EtcdError)
-		if !ok {
-			return err
-		}
-		
-		if etcdErr.Code() != codes.Unavailable || retries <= 0 {
+		if !shouldRetry(err, retries) {
 			return err
 		}
 

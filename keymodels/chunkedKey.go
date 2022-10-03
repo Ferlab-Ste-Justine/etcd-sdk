@@ -2,22 +2,21 @@ package keymodels
 
 import (
 	"io"
-	"strings"
 )
 
-type ChunkedKeySnapshot {
-	Info        ChunkedKeyInfo
+type ChunkedKeySnapshot struct {
+	Info     ChunkedKeyInfo
 	Revision int64
 }
 
-type ChunkedKeyInfo {
+type ChunkedKeyInfo struct {
 	Size        int64
 	Count 		int64
 	Version     int64	
 }
 
-type ChunkedKeyPayload {
-	Key string
+type ChunkedKeyPayload struct {
+	Key   string
 	Value io.ReadCloser
-	Size int64
+	Size  int64
 }
