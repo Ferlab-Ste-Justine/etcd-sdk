@@ -135,7 +135,6 @@ func (r *ChunksReader) Read(p []byte) (n int, err error) {
 	if r.Index == r.Snapshot.Info.Count {
 		return 0, io.EOF
 	}
-
 	
 	chunkKey := fmt.Sprintf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
 	kInfo, kExists, kErr := r.Client.GetKeyAtRevision(chunkKey, r.Snapshot.Revision)
@@ -199,4 +198,30 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 	}
 
 	return &payload, nil
+}
+
+func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	defer cancel()
+	
+	chunksPrefix := fmt.Sprintf("%s/chunks/", key)
+	infoKey := fmt.Sprintf("%s/info", key)
+	tx := cli.Client.Txn(ctx).Then(
+		clientv3.OpDelete(infoKey),
+		clientv3.OpDelete(chunksPrefix, clientv3.WithRange(clientv3.GetPrefixRangeEnd(chunksPrefix))),
+	)
+
+	_, err := tx.Commit()
+	if err != nil {
+		if shouldRetry(err, retries) {
+			time.Sleep(100 * time.Millisecond)
+			return cli.DeleteChunkedKeyWithRetries(key, retries - 1)
+		}
+	}
+
+	return err
+}
+
+func (cli *EtcdClient) DeleteChunkedKey(key string) error {
+	return cli.DeleteChunkedKeyWithRetries(key, cli.Retries)
 }
