@@ -11,13 +11,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-type AcquireLockOptions struct {
-	Key           string
-	Ttl           int64
-	Timeout       time.Duration
-	RetryInterval time.Duration
-}
-
 func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
@@ -35,11 +28,11 @@ func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries u
 	return nil
 }
 
-func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline time.Time, retries uint64) (*keymodels.Lock, error) {
+func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline time.Time, retries uint64) (*keymodels.Lock, bool, error) {
 	//If acquisition deadline has expired, fail
 	now := time.Now()
 	if now.After(deadline) {
-		return nil, errors.New(fmt.Sprintf("Could not acquire lock on key %s before deadline", opts.Key))
+		return nil, true, errors.New(fmt.Sprintf("Could not acquire lock on key %s before deadline", opts.Key))
 	}
 
 	//Exploratory get without getting a lease to see if a lock already exists
@@ -47,7 +40,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	_, exists, err := cli.GetKey(opts.Key)
 	if err != nil {
 		if !shouldRetry(err, retries) {
-			return nil, err
+			return nil, false, err
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -66,7 +59,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	leaseResp, leaseErr := cli.Client.Grant(ctx, opts.Ttl)
 	if leaseErr != nil {
 		if !shouldRetry(leaseErr, retries) {
-			return nil, leaseErr
+			return nil, false, leaseErr
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -94,7 +87,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	if txErr != nil {
 		releaseErr := cli.releaseLeaseWithRetries(leaseResp.ID, cli.Retries)
 		if (!shouldRetry(txErr, retries)) || releaseErr != nil {
-			return nil, txErr
+			return nil, false, txErr
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -105,17 +98,24 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	if !txResp.Succeeded {
 		releaseErr := cli.releaseLeaseWithRetries(leaseResp.ID, cli.Retries)
 		if releaseErr != nil {
-			return nil, releaseErr
+			return nil, false, releaseErr
 		}
 
 		time.Sleep(opts.RetryInterval)
 		return cli.acquireLockWithRetries(opts, deadline, retries)
 	}
 
-	return &lock, nil
+	return &lock, false, nil
 }
 
-func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*keymodels.Lock, error) {
+type AcquireLockOptions struct {
+	Key           string
+	Ttl           int64
+	Timeout       time.Duration
+	RetryInterval time.Duration
+}
+
+func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*keymodels.Lock, bool, error) {
 	if opts.Ttl == 0 {
 		opts.Ttl = 600
 	}
