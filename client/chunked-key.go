@@ -29,7 +29,7 @@ func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo,
 }
 
 func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKeyInfo, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 	
 	output, _ := json.Marshal(info)
@@ -201,7 +201,7 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 }
 
 func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cli.RequestTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 	
 	chunksPrefix := fmt.Sprintf("%s/chunks/", key)
