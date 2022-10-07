@@ -137,12 +137,12 @@ func (r *ChunksReader) Read(p []byte) (n int, err error) {
 	}
 	
 	chunkKey := fmt.Sprintf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
-	kInfo, kExists, kErr := r.Client.GetKeyAtRevision(chunkKey, r.Snapshot.Revision)
+	kInfo, kExists, kErr := r.Client.GetKey(chunkKey)
 	if kErr != nil {
 		return 0, kErr
 	}
 	if !kExists {
-		return 0, errors.New(fmt.Sprintf("%s chunk key not found at revision %d", chunkKey, r.Snapshot.Revision))
+		return 0, errors.New(fmt.Sprintf("%s chunk key not found", chunkKey))
 	}
 
 	r.Index += 1
