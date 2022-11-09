@@ -128,3 +128,7 @@ func (cli *EtcdClient) DiffPrefixWithMap(prefix string, inputKeys map[string]key
 func (cli *EtcdClient) DeletePrefix(prefix string) error {
 	return cli.DeleteKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }
+
+func (cli *EtcdClient) GetPrefix(prefix string) (map[string]keymodels.KeyInfo, int64, error) {
+	return cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
+}
