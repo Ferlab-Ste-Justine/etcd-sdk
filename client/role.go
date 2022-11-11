@@ -2,9 +2,10 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
-	"google.golang.org/grpc/codes"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -40,7 +41,7 @@ func permissionEnumToPerm(perm clientv3.PermissionType) string {
 	}
 }
 
-func (cli *EtcdClient) listRolesWithRetries(retries int) ([]string, error) {
+func (cli *EtcdClient) listRolesWithRetries(retries uint64) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -61,7 +62,7 @@ func (cli *EtcdClient) ListRoles() ([]string, error) {
 	return cli.listRolesWithRetries(cli.Retries)
 }
 
-func (cli *EtcdClient) insertEmptyRoleWithRetries(name string, retries int) error {
+func (cli *EtcdClient) insertEmptyRoleWithRetries(name string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -82,7 +83,7 @@ func (cli *EtcdClient) InsertEmptyRole(name string) error {
 	return cli.insertEmptyRoleWithRetries(name, cli.Retries)
 }
 
-func (cli *EtcdClient) grantRolePermissionWithRetries(name string, permission EtcdRolePermission, retries int) error {
+func (cli *EtcdClient) grantRolePermissionWithRetries(name string, permission EtcdRolePermission, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -103,7 +104,7 @@ func (cli *EtcdClient) GrantRolePermission(name string, permission EtcdRolePermi
 	return cli.grantRolePermissionWithRetries(name, permission, cli.Retries)
 }
 
-func (cli *EtcdClient) revokeRolePermissionWithRetries(name string, key string, rangeEnd string, retries int) error {
+func (cli *EtcdClient) revokeRolePermissionWithRetries(name string, key string, rangeEnd string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -124,7 +125,7 @@ func (cli *EtcdClient) RevokeRolePermission(name string, key string, rangeEnd st
 	return cli.revokeRolePermissionWithRetries(name, key, rangeEnd, cli.Retries)
 }
 
-func (cli *EtcdClient) getRolePermissionsWithRetries(name string, retries int) ([]EtcdRolePermission, bool, error) {
+func (cli *EtcdClient) getRolePermissionsWithRetries(name string, retries uint64) ([]EtcdRolePermission, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -160,14 +161,14 @@ func (cli *EtcdClient) GetRolePermissions(name string) ([]EtcdRolePermission, bo
 	return cli.getRolePermissionsWithRetries(name, cli.Retries)
 }
 
-func (cli *EtcdClient) deleteRoleWithRetries(name string, retries int) error {
+func (cli *EtcdClient) deleteRoleWithRetries(name string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.RoleDelete(ctx, name)
 	if err != nil {
 		if !shouldRetry(err, retries) {
-			return []EtcdRolePermission{}, false, err
+			return err
 		}
 
 		time.Sleep(100 * time.Millisecond)
