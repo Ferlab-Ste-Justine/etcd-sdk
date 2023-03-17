@@ -161,7 +161,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 		return nil, infoErr
 	}
 	if cKeyInfo == nil {
-		return nil, errors.New(fmt.Sprintf("% key doesn't have chunked key info", key))
+		return nil, errors.New(fmt.Sprintf("%s key doesn't have chunked key info", key))
 	}
 
 	var buffer bytes.Buffer
