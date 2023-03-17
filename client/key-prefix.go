@@ -17,7 +17,7 @@ type PrefixChangesResult struct {
 	Error   error
 }
 
-func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64) (<-chan PrefixChangesResult) {
+func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64) <-chan PrefixChangesResult {
 	outChan := make(chan PrefixChangesResult)
 
 	go func() {
@@ -30,18 +30,18 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64) (<-chan
 			outChan <- PrefixChangesResult{Error: errors.New("Failed to watch prefix changes: Watcher could not be established")}
 			return
 		}
-	
+
 		for res := range wc {
 			err := res.Err()
 			if err != nil {
 				outChan <- PrefixChangesResult{Error: errors.New(fmt.Sprintf("Failed to watch prefix changes: %s", err.Error()))}
 				return
 			}
-	
+
 			output := PrefixChangesResult{
 				Error: nil,
 				Changes: keymodels.KeysDiff{
-					Upserts: make(map[string]string),
+					Upserts:   make(map[string]string),
 					Deletions: []string{},
 				},
 			}
@@ -82,13 +82,13 @@ func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff keymodel
 	ops := []clientv3.Op{}
 
 	for _, key := range diff.Deletions {
-		ops = append(ops, clientv3.OpDelete(prefix + key))
+		ops = append(ops, clientv3.OpDelete(prefix+key))
 	}
 
 	for key, val := range diff.Upserts {
-		ops = append(ops, clientv3.OpPut(prefix + key, val))
+		ops = append(ops, clientv3.OpPut(prefix+key, val))
 	}
-	
+
 	tx := cli.Client.Txn(ctx).Then(ops...)
 
 	resp, txErr := tx.Commit()
@@ -98,7 +98,7 @@ func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff keymodel
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.applyDiffToPrefixWithRetries(prefix, diff, retries - 1)
+		return cli.applyDiffToPrefixWithRetries(prefix, diff, retries-1)
 	}
 
 	if !resp.Succeeded {

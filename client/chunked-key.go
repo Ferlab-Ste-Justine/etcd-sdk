@@ -31,9 +31,9 @@ func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo,
 func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKeyInfo, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
-	
+
 	output, _ := json.Marshal(info)
-	previousChunks := fmt.Sprintf("%s/chunks/v%d/", key, info.Version - 1)
+	previousChunks := fmt.Sprintf("%s/chunks/v%d/", key, info.Version-1)
 	tx := cli.Client.Txn(ctx).Then(
 		clientv3.OpPut(fmt.Sprintf("%s/info", key), string(output)),
 		clientv3.OpDelete(previousChunks, clientv3.WithRange(clientv3.GetPrefixRangeEnd(previousChunks))),
@@ -43,7 +43,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKe
 	if err != nil {
 		if shouldRetry(err, retries) {
 			time.Sleep(100 * time.Millisecond)
-			return cli.persistVersionChange(key, info, retries - 1)
+			return cli.persistVersionChange(key, info, retries-1)
 		}
 	}
 
@@ -51,12 +51,12 @@ func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKe
 }
 
 func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
-	cMaxSize := int64(1024*1024)
+	cMaxSize := int64(1024 * 1024)
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key.Key)
 	if infoErr != nil {
 		return infoErr
 	}
-	
+
 	var version int64
 	if keyInfo != nil {
 		version = keyInfo.Version
@@ -65,7 +65,7 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	}
 
 	//Cleanup before write in case a previous write attempt aborted in error
-	clearErr := cli.DeletePrefix(fmt.Sprintf("%s/chunks/v%d/", key.Key, version + 1))
+	clearErr := cli.DeletePrefix(fmt.Sprintf("%s/chunks/v%d/", key.Key, version+1))
 	if clearErr != nil {
 		return clearErr
 	}
@@ -78,9 +78,9 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 
 	buf := make([]byte, cMaxSize)
 	for idx := int64(0); idx < chunks; idx++ {
-		cKey := fmt.Sprintf("%s/chunks/v%d/%d", key.Key, version + 1, idx)
+		cKey := fmt.Sprintf("%s/chunks/v%d/%d", key.Key, version+1, idx)
 
-		if idx < (chunks -1) || (key.Size % cMaxSize) == 0 {
+		if idx < (chunks-1) || (key.Size%cMaxSize) == 0 {
 			_, readErr := io.ReadFull(key.Value, buf)
 			if readErr != nil {
 				return readErr
@@ -91,12 +91,12 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 				return putErr
 			}
 		} else {
-			_, readErr := io.ReadAtLeast(key.Value, buf, int(key.Size % cMaxSize))
+			_, readErr := io.ReadAtLeast(key.Value, buf, int(key.Size%cMaxSize))
 			if readErr != nil {
 				return readErr
 			}
 
-			putErr := cli.PutKey(cKey, string(buf[:key.Size % cMaxSize]))
+			putErr := cli.PutKey(cKey, string(buf[:key.Size%cMaxSize]))
 			if putErr != nil {
 				return putErr
 			}
@@ -105,8 +105,8 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 
 	//update chunk info and delete previous version chunks as single transaction
 	return cli.persistVersionChange(key.Key, keymodels.ChunkedKeyInfo{
-		Size: key.Size,
-		Count: chunks,
+		Size:    key.Size,
+		Count:   chunks,
 		Version: version + 1,
 	}, cli.Retries)
 }
@@ -135,7 +135,7 @@ func (r *ChunksReader) Read(p []byte) (n int, err error) {
 	if r.Index == r.Snapshot.Info.Count {
 		return 0, io.EOF
 	}
-	
+
 	chunkKey := fmt.Sprintf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
 	kInfo, kExists, kErr := r.Client.GetKey(chunkKey)
 	if kErr != nil {
@@ -165,14 +165,14 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 	}
 
 	var buffer bytes.Buffer
-	buffer.Grow(1024*1024)
+	buffer.Grow(1024 * 1024)
 	reader := ChunksReader{
 		Client: cli,
-		Key: key,
-		Index: 0,
+		Key:    key,
+		Index:  0,
 		Buffer: &buffer,
-		Snapshot: keymodels.ChunkedKeySnapshot {
-			Info: *cKeyInfo,
+		Snapshot: keymodels.ChunkedKeySnapshot{
+			Info:     *cKeyInfo,
 			Revision: revision,
 		},
 	}
@@ -192,9 +192,9 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 	}
 
 	payload := keymodels.ChunkedKeyPayload{
-		Key: key,
+		Key:   key,
 		Value: reader,
-		Size: reader.Snapshot.Info.Size,
+		Size:  reader.Snapshot.Info.Size,
 	}
 
 	return &payload, nil
@@ -203,7 +203,7 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
-	
+
 	chunksPrefix := fmt.Sprintf("%s/chunks/", key)
 	infoKey := fmt.Sprintf("%s/info", key)
 	tx := cli.Client.Txn(ctx).Then(
@@ -215,7 +215,7 @@ func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) e
 	if err != nil {
 		if shouldRetry(err, retries) {
 			time.Sleep(100 * time.Millisecond)
-			return cli.DeleteChunkedKeyWithRetries(key, retries - 1)
+			return cli.DeleteChunkedKeyWithRetries(key, retries-1)
 		}
 	}
 

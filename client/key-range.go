@@ -21,18 +21,18 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.getKeyRangeWithRetries(key, rangeEnd, retries - 1)
+		return cli.getKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 
 	for _, kv := range res.Kvs {
 		key, value, createRevision, modRevision, version, lease := string(kv.Key), string(kv.Value), kv.CreateRevision, kv.ModRevision, kv.Version, kv.Lease
 		keys[key] = keymodels.KeyInfo{
-			Key: key,
-			Value: value,
-			Version: version,
+			Key:            key,
+			Value:          value,
+			Version:        version,
 			CreateRevision: createRevision,
-			ModRevision: modRevision,
-			Lease: lease,
+			ModRevision:    modRevision,
+			Lease:          lease,
 		}
 	}
 
@@ -43,7 +43,7 @@ func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]keym
 	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
 
-func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string , retries uint64) error {
+func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -54,7 +54,7 @@ func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string , r
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.deleteKeyRangeWithRetries(key, rangeEnd, retries - 1)
+		return cli.deleteKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 
 	return nil

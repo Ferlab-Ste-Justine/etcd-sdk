@@ -1,4 +1,3 @@
-
 package keymodels
 
 type KeyInfo struct {

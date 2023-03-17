@@ -73,7 +73,7 @@ func (cli *EtcdClient) insertEmptyRoleWithRetries(name string, retries uint64) e
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.insertEmptyRoleWithRetries(name, retries - 1)
+		return cli.insertEmptyRoleWithRetries(name, retries-1)
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func (cli *EtcdClient) grantRolePermissionWithRetries(name string, permission Et
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.grantRolePermissionWithRetries(name, permission, retries - 1)
+		return cli.grantRolePermissionWithRetries(name, permission, retries-1)
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func (cli *EtcdClient) revokeRolePermissionWithRetries(name string, key string, 
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.revokeRolePermissionWithRetries(name, key, rangeEnd, retries - 1)
+		return cli.revokeRolePermissionWithRetries(name, key, rangeEnd, retries-1)
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (cli *EtcdClient) getRolePermissionsWithRetries(name string, retries uint64
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.getRolePermissionsWithRetries(name, retries - 1)
+		return cli.getRolePermissionsWithRetries(name, retries-1)
 	}
 
 	result := make([]EtcdRolePermission, len(res.Perm))
@@ -172,7 +172,7 @@ func (cli *EtcdClient) deleteRoleWithRetries(name string, retries uint64) error 
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.deleteRoleWithRetries(name, retries - 1)
+		return cli.deleteRoleWithRetries(name, retries-1)
 	}
 
 	return nil

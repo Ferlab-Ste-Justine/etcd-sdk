@@ -36,7 +36,7 @@ func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 	}
 
 	(*tlsConf).InsecureSkipVerify = false
-	
+
 	//CA cert
 	caCertContent, err := ioutil.ReadFile(opts.CaCertPath)
 	if err != nil {
@@ -48,7 +48,7 @@ func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 		return nil, errors.New("Failed to parse root certificate authority")
 	}
 	(*tlsConf).RootCAs = roots
-	
+
 	//Connection
 	var cli *clientv3.Client
 	var connErr error
@@ -68,11 +68,11 @@ func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 			DialTimeout: opts.ConnectionTimeout,
 		})
 	}
-	
+
 	if connErr != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to connect to etcd servers: %s", connErr.Error()))
 	}
-	
+
 	return &EtcdClient{
 		Client:         cli,
 		Retries:        opts.Retries,

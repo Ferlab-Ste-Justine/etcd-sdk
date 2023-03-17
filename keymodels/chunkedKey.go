@@ -10,9 +10,9 @@ type ChunkedKeySnapshot struct {
 }
 
 type ChunkedKeyInfo struct {
-	Size        int64
-	Count 		int64
-	Version     int64	
+	Size    int64
+	Count   int64
+	Version int64
 }
 
 type ChunkedKeyPayload struct {

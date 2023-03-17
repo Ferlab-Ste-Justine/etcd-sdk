@@ -1,8 +1,8 @@
 package keymodels
 
 import (
-	"time"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"time"
 )
 
 type Lock struct {

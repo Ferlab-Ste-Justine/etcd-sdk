@@ -14,7 +14,7 @@ import (
 func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
-	
+
 	_, err := cli.Client.Revoke(ctx, lease)
 	if err != nil {
 		if !shouldRetry(err, retries) {
@@ -22,7 +22,7 @@ func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries u
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.releaseLeaseWithRetries(lease, retries - 1)
+		return cli.releaseLeaseWithRetries(lease, retries-1)
 	}
 
 	return nil
@@ -44,7 +44,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.acquireLockWithRetries(opts, deadline, retries - 1)
+		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
 	if exists {
@@ -63,13 +63,13 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.acquireLockWithRetries(opts, deadline, retries - 1)
+		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
 	//Create a lock with a transaction as safeguard, in case another acquirer narrowly beat us to the punch
 	lock := keymodels.Lock{
-		Lease: leaseResp.ID,
-		Ttl: opts.Ttl,
+		Lease:     leaseResp.ID,
+		Ttl:       opts.Ttl,
 		Timestamp: now,
 	}
 	output, _ := json.Marshal(lock)
@@ -82,7 +82,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		clientv3.OpPut(opts.Key, string(output), clientv3.WithLease(leaseResp.ID)),
 	)
 	txResp, txErr := tx.Commit()
-	
+
 	//Transaction error
 	if txErr != nil {
 		releaseErr := cli.releaseLeaseWithRetries(leaseResp.ID, cli.Retries)
@@ -91,7 +91,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.acquireLockWithRetries(opts, deadline, retries - 1)
+		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
 	//Someone beat us to the punch acquiring the lock
@@ -143,7 +143,7 @@ func (cli *EtcdClient) ReadLock(key string) (*keymodels.Lock, error) {
 	unmarshalErr := json.Unmarshal([]byte(info.Value), &lock)
 	if unmarshalErr != nil {
 		return nil, unmarshalErr
-	}	
+	}
 
 	return &lock, nil
 }

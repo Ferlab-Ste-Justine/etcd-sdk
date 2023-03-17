@@ -3,9 +3,9 @@ package client
 import (
 	"time"
 
-	"google.golang.org/grpc/codes"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc/codes"
 )
 
 type EtcdClient struct {
@@ -23,7 +23,7 @@ func shouldRetry(err error, retries uint64) bool {
 	if !ok {
 		return false
 	}
-	
+
 	if etcdErr.Code() != codes.Unavailable || retries == 0 {
 		return false
 	}
