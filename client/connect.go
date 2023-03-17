@@ -23,7 +23,7 @@ type EtcdClientOptions struct {
 	Retries           uint64
 }
 
-func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
+func getTlsConfigs(opts EtcdClientOptions) (*tls.Config, error) {
 	tlsConf := &tls.Config{}
 
 	//User credentials
@@ -48,6 +48,18 @@ func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 		return nil, errors.New("Failed to parse root certificate authority")
 	}
 	(*tlsConf).RootCAs = roots
+
+	return tlsConf, nil
+}
+
+func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
+	var tlsConf *tls.Config
+	var tlsConfErr error
+
+	tlsConf, tlsConfErr = getTlsConfigs(opts)
+	if tlsConfErr != nil {
+		return nil, tlsConfErr
+	}
 
 	//Connection
 	var cli *clientv3.Client
