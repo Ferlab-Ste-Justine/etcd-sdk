@@ -13,15 +13,15 @@ import (
 )
 
 type PrefixChangesResult struct {
-	Changes keymodels.KeysDiff
+	Changes keymodels.WatchInfo
 	Error   error
 }
 
-func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64) <-chan PrefixChangesResult {
+func (cli *EtcdClient) WatchPrefixChanges(ctx context.Context, prefix string, revision int64, trimPrefix bool) <-chan PrefixChangesResult {
 	outChan := make(chan PrefixChangesResult)
 
 	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		defer close(outChan)
 
@@ -40,17 +40,30 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64) <-chan 
 
 			output := PrefixChangesResult{
 				Error: nil,
-				Changes: keymodels.KeysDiff{
-					Upserts:   make(map[string]string),
+				Changes: keymodels.WatchInfo{
+					Upserts:   make(map[string]keymodels.KeyWatchInfo),
 					Deletions: []string{},
 				},
 			}
 
 			for _, ev := range res.Events {
+				key := string(ev.Kv.Key)
+				if trimPrefix {
+					key = strings.TrimPrefix(key, prefix)
+				}
 				if ev.Type == mvccpb.DELETE {
-					output.Changes.Deletions = append(output.Changes.Deletions, strings.TrimPrefix(string(ev.Kv.Key), prefix))
+					output.Changes.Deletions = append(
+						output.Changes.Deletions, 
+						key,
+					)
 				} else if ev.Type == mvccpb.PUT {
-					output.Changes.Upserts[strings.TrimPrefix(string(ev.Kv.Key), prefix)] = string(ev.Kv.Value)
+					output.Changes.Upserts[key] = keymodels.KeyWatchInfo{
+						Value: string(ev.Kv.Value),
+						Version: ev.Kv.Version,
+						CreateRevision: ev.Kv.CreateRevision,
+						ModRevision: ev.Kv.ModRevision,
+						Lease: ev.Kv.Lease,
+					}
 				}
 			}
 
