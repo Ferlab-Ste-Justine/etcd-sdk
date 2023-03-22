@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -52,7 +53,7 @@ func getTlsConfigs(opts EtcdClientOptions) (*tls.Config, error) {
 	return tlsConf, nil
 }
 
-func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
+func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 	var tlsConf *tls.Config
 	var tlsConfErr error
 
@@ -67,12 +68,14 @@ func Connect(opts EtcdClientOptions) (*EtcdClient, error) {
 
 	if opts.Username == "" {
 		cli, connErr = clientv3.New(clientv3.Config{
+			Context:     ctx,
 			Endpoints:   opts.EtcdEndpoints,
 			TLS:         tlsConf,
 			DialTimeout: opts.ConnectionTimeout,
 		})
 	} else {
 		cli, connErr = clientv3.New(clientv3.Config{
+			Context:     ctx,
 			Username:    opts.Username,
 			Password:    opts.Password,
 			Endpoints:   opts.EtcdEndpoints,

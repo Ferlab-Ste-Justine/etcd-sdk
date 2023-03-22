@@ -65,7 +65,7 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	}
 
 	//Cleanup before write in case a previous write attempt aborted in error
-	clearErr := cli.DeletePrefix(fmt.Sprintf("%s/chunks/v%d/", key.Key, version+1))
+	clearErr := cli.DeletePrefix(context.Background(), fmt.Sprintf("%s/chunks/v%d/", key.Key, version+1))
 	if clearErr != nil {
 		return clearErr
 	}
