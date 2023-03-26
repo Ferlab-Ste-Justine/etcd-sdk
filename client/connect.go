@@ -92,5 +92,6 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 		Client:         cli,
 		Retries:        opts.Retries,
 		RequestTimeout: opts.RequestTimeout,
+		Context:        ctx,
 	}, nil
 }

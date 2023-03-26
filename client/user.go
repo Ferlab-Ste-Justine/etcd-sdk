@@ -16,7 +16,7 @@ type EtcdUser struct {
 }
 
 func (cli *EtcdClient) listUsersWithRetries(retries uint64) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	res, err := cli.Client.UserList(ctx)
@@ -37,7 +37,7 @@ func (cli *EtcdClient) ListUsers() ([]string, error) {
 }
 
 func (cli *EtcdClient) insertEmptyUserWithRetries(username string, password string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.UserAdd(ctx, username, password)
@@ -58,7 +58,7 @@ func (cli *EtcdClient) InsertEmptyUser(username string, password string) error {
 }
 
 func (cli *EtcdClient) getUserRolesWithRetries(username string, retries uint64) ([]string, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	res, err := cli.Client.UserGet(ctx, username)
@@ -84,7 +84,7 @@ func (cli *EtcdClient) GetUserRoles(username string) ([]string, bool, error) {
 }
 
 func (cli *EtcdClient) changeUserPasswordWithRetries(username string, password string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.UserChangePassword(ctx, username, password)
@@ -105,7 +105,7 @@ func (cli *EtcdClient) ChangeUserPassword(username string, password string) erro
 }
 
 func (cli *EtcdClient) grantUserRoleWithRetries(username string, role string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.UserGrantRole(ctx, username, role)
@@ -126,7 +126,7 @@ func (cli *EtcdClient) GrantUserRole(username string, role string) error {
 }
 
 func (cli *EtcdClient) revokeUserRoleWithRetries(username string, role string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.UserRevokeRole(ctx, username, role)
@@ -147,7 +147,7 @@ func (cli *EtcdClient) RevokeUserRole(username string, role string) error {
 }
 
 func (cli *EtcdClient) deleteUserWithRetries(username string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.UserDelete(ctx, username)

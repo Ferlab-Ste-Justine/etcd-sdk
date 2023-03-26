@@ -42,7 +42,7 @@ func permissionEnumToPerm(perm clientv3.PermissionType) string {
 }
 
 func (cli *EtcdClient) listRolesWithRetries(retries uint64) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	res, err := cli.Client.RoleList(ctx)
@@ -63,7 +63,7 @@ func (cli *EtcdClient) ListRoles() ([]string, error) {
 }
 
 func (cli *EtcdClient) insertEmptyRoleWithRetries(name string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.RoleAdd(ctx, name)
@@ -84,7 +84,7 @@ func (cli *EtcdClient) InsertEmptyRole(name string) error {
 }
 
 func (cli *EtcdClient) grantRolePermissionWithRetries(name string, permission EtcdRolePermission, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.RoleGrantPermission(ctx, name, permission.Key, permission.RangeEnd, permissionToEnum(permission.Permission))
@@ -105,7 +105,7 @@ func (cli *EtcdClient) GrantRolePermission(name string, permission EtcdRolePermi
 }
 
 func (cli *EtcdClient) revokeRolePermissionWithRetries(name string, key string, rangeEnd string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.RoleRevokePermission(ctx, name, key, rangeEnd)
@@ -126,7 +126,7 @@ func (cli *EtcdClient) RevokeRolePermission(name string, key string, rangeEnd st
 }
 
 func (cli *EtcdClient) getRolePermissionsWithRetries(name string, retries uint64) ([]EtcdRolePermission, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	res, err := cli.Client.RoleGet(ctx, name)
@@ -162,7 +162,7 @@ func (cli *EtcdClient) GetRolePermissions(name string) ([]EtcdRolePermission, bo
 }
 
 func (cli *EtcdClient) deleteRoleWithRetries(name string, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.RoleDelete(ctx, name)

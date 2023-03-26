@@ -8,20 +8,20 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func (cli *EtcdClient) getKeyRangeWithRetries(ctx context.Context, key string, rangeEnd string, retries uint64) (map[string]keymodels.KeyInfo, int64, error) {
-	ictx, cancel := context.WithTimeout(ctx, cli.RequestTimeout)
+func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (map[string]keymodels.KeyInfo, int64, error) {
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	keys := make(map[string]keymodels.KeyInfo)
 
-	res, err := cli.Client.Get(ictx, key, clientv3.WithRange(rangeEnd))
+	res, err := cli.Client.Get(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
 		if !shouldRetry(err, retries) {
 			return keys, -1, err
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.getKeyRangeWithRetries(ctx, key, rangeEnd, retries-1)
+		return cli.getKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 
 	for _, kv := range res.Kvs {
@@ -39,27 +39,27 @@ func (cli *EtcdClient) getKeyRangeWithRetries(ctx context.Context, key string, r
 	return keys, res.Header.Revision, nil
 }
 
-func (cli *EtcdClient) GetKeyRange(ctx context.Context, key string, rangeEnd string) (map[string]keymodels.KeyInfo, int64, error) {
-	return cli.getKeyRangeWithRetries(ctx, key, rangeEnd, cli.Retries)
+func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]keymodels.KeyInfo, int64, error) {
+	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
 
-func (cli *EtcdClient) deleteKeyRangeWithRetries(ctx context.Context, key string, rangeEnd string, retries uint64) error {
-	ictx, cancel := context.WithTimeout(ctx, cli.RequestTimeout)
+func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string, retries uint64) error {
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
-	_, err := cli.Client.Delete(ictx, key, clientv3.WithRange(rangeEnd))
+	_, err := cli.Client.Delete(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
 		if !shouldRetry(err, retries) {
 			return err
 		}
 
 		time.Sleep(100 * time.Millisecond)
-		return cli.deleteKeyRangeWithRetries(ctx, key, rangeEnd, retries-1)
+		return cli.deleteKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 
 	return nil
 }
 
-func (cli *EtcdClient) DeleteKeyRange(ctx context.Context, key string, rangeEnd string) error {
-	return cli.deleteKeyRangeWithRetries(ctx, key, rangeEnd, cli.Retries)
+func (cli *EtcdClient) DeleteKeyRange(key string, rangeEnd string) error {
+	return cli.deleteKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }

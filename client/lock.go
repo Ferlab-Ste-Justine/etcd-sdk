@@ -12,7 +12,7 @@ import (
 )
 
 func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries uint64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	_, err := cli.Client.Revoke(ctx, lease)
@@ -53,7 +53,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	}
 
 	//Changes are good we can get a lock, so create a lease
-	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	leaseResp, leaseErr := cli.Client.Grant(ctx, opts.Ttl)
@@ -74,7 +74,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	}
 	output, _ := json.Marshal(lock)
 
-	txCtx, txCancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
+	txCtx, txCancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer txCancel()
 	tx := cli.Client.Txn(txCtx).If(
 		clientv3.Compare(clientv3.Version(opts.Key), "=", 0),
