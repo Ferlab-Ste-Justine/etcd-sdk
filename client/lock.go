@@ -74,10 +74,15 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	}
 	output, _ := json.Marshal(lock)
 
+	txIfs := []clientv3.Cmp{clientv3.Compare(clientv3.Version(opts.Key), "=", 0)}
+	if len(opts.ExtraConditions) > 0 {
+		txIfs = append(txIfs,opts.ExtraConditions...)
+	}
+
 	txCtx, txCancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer txCancel()
 	tx := cli.Client.Txn(txCtx).If(
-		clientv3.Compare(clientv3.Version(opts.Key), "=", 0),
+		txIfs...
 	).Then(
 		clientv3.OpPut(opts.Key, string(output), clientv3.WithLease(leaseResp.ID)),
 	)
@@ -109,10 +114,11 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 }
 
 type AcquireLockOptions struct {
-	Key           string
-	Ttl           int64
-	Timeout       time.Duration
-	RetryInterval time.Duration
+	Key             string
+	Ttl             int64
+	Timeout         time.Duration
+	RetryInterval   time.Duration
+	ExtraConditions []clientv3.Cmp
 }
 
 func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*keymodels.Lock, bool, error) {
