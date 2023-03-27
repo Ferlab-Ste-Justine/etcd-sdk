@@ -22,6 +22,7 @@ type EtcdClientOptions struct {
 	ConnectionTimeout time.Duration
 	RequestTimeout    time.Duration
 	Retries           uint64
+	SkipTLS           bool
 }
 
 func getTlsConfigs(opts EtcdClientOptions) (*tls.Config, error) {
@@ -57,9 +58,11 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 	var tlsConf *tls.Config
 	var tlsConfErr error
 
-	tlsConf, tlsConfErr = getTlsConfigs(opts)
-	if tlsConfErr != nil {
-		return nil, tlsConfErr
+	if !opts.SkipTLS {
+		tlsConf, tlsConfErr = getTlsConfigs(opts)
+		if tlsConfErr != nil {
+			return nil, tlsConfErr
+		}
 	}
 
 	//Connection
