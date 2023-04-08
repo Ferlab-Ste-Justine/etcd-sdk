@@ -2,7 +2,7 @@ package client
 
 import "context"
 
-func (cli *EtcdClient) AuthStatus() (bool, error) {
+func (cli *EtcdClient) GetAuthStatus() (bool, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
@@ -14,7 +14,7 @@ func (cli *EtcdClient) AuthStatus() (bool, error) {
 	return resp.Enabled, nil
 }
 
-func (cli *EtcdClient) AuthSet(enable bool) error {
+func (cli *EtcdClient) SetAuthStatus(enable bool) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
