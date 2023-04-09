@@ -1,28 +1,62 @@
 package client
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
-func (cli *EtcdClient) GetAuthStatus() (bool, error) {
+func (cli *EtcdClient) getAuthStatusWithRetries(retries uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	resp, err := cli.Client.AuthStatus(ctx)
 	if err != nil {
-		return false, err
+		if !shouldRetry(err, retries) {
+			return false, err
+		}
+
+		time.Sleep(cli.RetryInterval)
+		return cli.getAuthStatusWithRetries(retries - 1)
 	}
 
 	return resp.Enabled, nil
 }
 
-func (cli *EtcdClient) SetAuthStatus(enable bool) error {
+/*
+Retrieves the authentication status (enabled or not) of the etcd cluster.
+Note that if the authentication is disabled, this call will only work from a loopback address.
+*/
+func (cli *EtcdClient) GetAuthStatus() (bool, error) {
+	return cli.getAuthStatusWithRetries(cli.Retries)
+}
+
+func (cli *EtcdClient) setAuthStatusWithRetries(enabled bool, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	var err error
-	if enable {
+	if enabled {
 		_, err = cli.Client.AuthEnable(ctx)
 	} else {
 		_, err = cli.Client.AuthDisable(ctx)
 	}
-	return err
+
+	if err != nil {
+		if !shouldRetry(err, retries) {
+			return err
+		}
+
+		time.Sleep(cli.RetryInterval)
+		return cli.setAuthStatusWithRetries(enabled, retries - 1)
+	}
+
+	return nil
+}
+
+/*
+Sets the authentication status (enabled or not) of the etcd cluster.
+Note that if the authentication is disabled, this call will only work from a loopback address.
+*/
+func (cli *EtcdClient) SetAuthStatus(enable bool) error {
+	return cli.setAuthStatusWithRetries(enable, cli.Retries)
 }
