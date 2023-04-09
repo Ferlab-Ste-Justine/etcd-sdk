@@ -27,7 +27,7 @@ func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries u
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.releaseLeaseWithRetries(lease, retries-1)
 	}
 
@@ -49,7 +49,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 			return nil, false, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
@@ -68,7 +68,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 			return nil, false, leaseErr
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
@@ -102,7 +102,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 			return nil, false, txErr
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 

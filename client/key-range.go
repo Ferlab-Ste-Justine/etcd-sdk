@@ -19,7 +19,7 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 			return keys, -1, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.getKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 
@@ -52,7 +52,7 @@ func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string, re
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.deleteKeyRangeWithRetries(key, rangeEnd, retries-1)
 	}
 

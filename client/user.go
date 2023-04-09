@@ -25,7 +25,7 @@ func (cli *EtcdClient) listUsersWithRetries(retries uint64) ([]string, error) {
 			return []string{}, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.listUsersWithRetries(retries - 1)
 	}
 
@@ -46,7 +46,7 @@ func (cli *EtcdClient) insertEmptyUserWithRetries(username string, password stri
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.insertEmptyUserWithRetries(username, password, retries-1)
 	}
 
@@ -72,7 +72,7 @@ func (cli *EtcdClient) getUserRolesWithRetries(username string, retries uint64) 
 			return []string{}, false, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.getUserRolesWithRetries(username, retries-1)
 	}
 
@@ -93,7 +93,7 @@ func (cli *EtcdClient) changeUserPasswordWithRetries(username string, password s
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.changeUserPasswordWithRetries(username, password, retries-1)
 	}
 
@@ -114,7 +114,7 @@ func (cli *EtcdClient) grantUserRoleWithRetries(username string, role string, re
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.grantUserRoleWithRetries(username, role, retries-1)
 	}
 
@@ -135,7 +135,7 @@ func (cli *EtcdClient) revokeUserRoleWithRetries(username string, role string, r
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.revokeUserRoleWithRetries(username, role, retries-1)
 	}
 
@@ -156,7 +156,7 @@ func (cli *EtcdClient) deleteUserWithRetries(username string, retries uint64) er
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.deleteUserWithRetries(username, retries-1)
 	}
 

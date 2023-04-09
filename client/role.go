@@ -51,7 +51,7 @@ func (cli *EtcdClient) listRolesWithRetries(retries uint64) ([]string, error) {
 			return []string{}, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.listRolesWithRetries(retries - 1)
 	}
 
@@ -72,7 +72,7 @@ func (cli *EtcdClient) insertEmptyRoleWithRetries(name string, retries uint64) e
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.insertEmptyRoleWithRetries(name, retries-1)
 	}
 
@@ -93,7 +93,7 @@ func (cli *EtcdClient) grantRolePermissionWithRetries(name string, permission Et
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.grantRolePermissionWithRetries(name, permission, retries-1)
 	}
 
@@ -114,7 +114,7 @@ func (cli *EtcdClient) revokeRolePermissionWithRetries(name string, key string, 
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.revokeRolePermissionWithRetries(name, key, rangeEnd, retries-1)
 	}
 
@@ -140,7 +140,7 @@ func (cli *EtcdClient) getRolePermissionsWithRetries(name string, retries uint64
 			return []EtcdRolePermission{}, false, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.getRolePermissionsWithRetries(name, retries-1)
 	}
 
@@ -171,7 +171,7 @@ func (cli *EtcdClient) deleteRoleWithRetries(name string, retries uint64) error 
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.deleteRoleWithRetries(name, retries-1)
 	}
 

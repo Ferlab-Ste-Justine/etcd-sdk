@@ -122,7 +122,7 @@ func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff KeysDiff
 			return txErr
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.applyDiffToPrefixWithRetries(prefix, diff, retries-1)
 	}
 

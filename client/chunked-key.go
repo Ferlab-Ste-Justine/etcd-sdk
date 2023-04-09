@@ -66,7 +66,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info ChunkedKeyInfo, ret
 	_, err := tx.Commit()
 	if err != nil {
 		if shouldRetry(err, retries) {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(cli.RetryInterval)
 			return cli.persistVersionChange(key, info, retries-1)
 		}
 	}
@@ -238,7 +238,7 @@ func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) e
 	_, err := tx.Commit()
 	if err != nil {
 		if shouldRetry(err, retries) {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(cli.RetryInterval)
 			return cli.DeleteChunkedKeyWithRetries(key, retries-1)
 		}
 	}

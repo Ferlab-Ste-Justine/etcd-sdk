@@ -12,6 +12,7 @@ import (
 type EtcdClient struct {
 	Client         *clientv3.Client
 	Retries        uint64
+	RetryInterval  time.Duration
 	RequestTimeout time.Duration
 	Context        context.Context
 }

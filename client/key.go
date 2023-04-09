@@ -26,7 +26,7 @@ func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64)
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.putKeyWithRetries(key, val, retries-1)
 	}
 	return nil
@@ -54,7 +54,7 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 			return KeyInfo{}, false, err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.getKeyWithRetries(key, revision, retries-1)
 	}
 
@@ -90,7 +90,7 @@ func (cli *EtcdClient) deleteKeyWithRetries(key string, retries uint64) error {
 			return err
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(cli.RetryInterval)
 		return cli.deleteKeyWithRetries(key, retries-1)
 	}
 
