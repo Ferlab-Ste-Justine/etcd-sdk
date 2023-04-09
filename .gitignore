@@ -1,0 +1,6 @@
+test/.terraform
+test/certs/
+test/etcd-data-*/
+test/etcd-logs/
+test/.terraform.lock.hcl
+test/terraform.tfstate
