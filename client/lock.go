@@ -14,6 +14,7 @@ type Lock struct {
 	Lease     clientv3.LeaseID
 	Ttl       int64
 	Timestamp time.Time
+	Revision  int64
 }
 
 func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries uint64) error {
@@ -76,6 +77,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		Lease:     leaseResp.ID,
 		Ttl:       opts.Ttl,
 		Timestamp: now,
+		Revision: leaseResp.ResponseHeader.Revision,
 	}
 	output, _ := json.Marshal(lock)
 
