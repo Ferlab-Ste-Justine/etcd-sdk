@@ -7,13 +7,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
+type KeyWatchInfo struct {
+	Value          string
+	Version        int64
+	CreateRevision int64
+	ModRevision    int64
+	Lease          int64
+}
+
+type WatchInfo struct {
+	Upserts   map[string]KeyWatchInfo
+	Deletions []string
+}
+
 type PrefixChangesResult struct {
-	Changes keymodels.WatchInfo
+	Changes WatchInfo
 	Error   error
 }
 
@@ -40,8 +52,8 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPre
 
 			output := PrefixChangesResult{
 				Error: nil,
-				Changes: keymodels.WatchInfo{
-					Upserts:   make(map[string]keymodels.KeyWatchInfo),
+				Changes: WatchInfo{
+					Upserts:   make(map[string]KeyWatchInfo),
 					Deletions: []string{},
 				},
 			}
@@ -57,7 +69,7 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPre
 						key,
 					)
 				} else if ev.Type == mvccpb.PUT {
-					output.Changes.Upserts[key] = keymodels.KeyWatchInfo{
+					output.Changes.Upserts[key] = KeyWatchInfo{
 						Value: string(ev.Kv.Value),
 						Version: ev.Kv.Version,
 						CreateRevision: ev.Kv.CreateRevision,
@@ -74,21 +86,21 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPre
 	return outChan
 }
 
-func (cli *EtcdClient) DiffBetweenPrefixes(srcPrefix string, dstPrefix string) (keymodels.KeysDiff, error) {
+func (cli *EtcdClient) DiffBetweenPrefixes(srcPrefix string, dstPrefix string) (KeysDiff, error) {
 	srcKeys, _, srcErr := cli.GetKeyRange(srcPrefix, clientv3.GetPrefixRangeEnd(srcPrefix))
 	if srcErr != nil {
-		return keymodels.KeysDiff{}, srcErr
+		return KeysDiff{}, srcErr
 	}
 
 	dstKeys, _, dstErr := cli.GetKeyRange(dstPrefix, clientv3.GetPrefixRangeEnd(dstPrefix))
 	if dstErr != nil {
-		return keymodels.KeysDiff{}, dstErr
+		return KeysDiff{}, dstErr
 	}
 
-	return keymodels.GetKeysDiff(srcKeys, srcPrefix, dstKeys, dstPrefix), nil
+	return GetKeysDiff(srcKeys, srcPrefix, dstKeys, dstPrefix), nil
 }
 
-func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff keymodels.KeysDiff, retries uint64) error {
+func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff KeysDiff, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
@@ -121,27 +133,27 @@ func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff keymodel
 	return nil
 }
 
-func (cli *EtcdClient) ApplyDiffToPrefix(prefix string, diff keymodels.KeysDiff) error {
+func (cli *EtcdClient) ApplyDiffToPrefix(prefix string, diff KeysDiff) error {
 	return cli.applyDiffToPrefixWithRetries(prefix, diff, cli.Retries)
 }
 
-func (cli *EtcdClient) DiffPrefixWithMap(prefix string, inputKeys map[string]keymodels.KeyInfo, inputKeysPrefix string, inputIsSource bool) (keymodels.KeysDiff, error) {
+func (cli *EtcdClient) DiffPrefixWithMap(prefix string, inputKeys map[string]KeyInfo, inputKeysPrefix string, inputIsSource bool) (KeysDiff, error) {
 	prefixKeys, _, err := cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 	if err != nil {
-		return keymodels.KeysDiff{}, err
+		return KeysDiff{}, err
 	}
 
 	if inputIsSource {
-		return keymodels.GetKeysDiff(inputKeys, inputKeysPrefix, prefixKeys, prefix), nil
+		return GetKeysDiff(inputKeys, inputKeysPrefix, prefixKeys, prefix), nil
 	}
 
-	return keymodels.GetKeysDiff(prefixKeys, prefix, inputKeys, inputKeysPrefix), nil
+	return GetKeysDiff(prefixKeys, prefix, inputKeys, inputKeysPrefix), nil
 }
 
 func (cli *EtcdClient) DeletePrefix(prefix string) error {
 	return cli.DeleteKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }
 
-func (cli *EtcdClient) GetPrefix(prefix string) (map[string]keymodels.KeyInfo, int64, error) {
+func (cli *EtcdClient) GetPrefix(prefix string) (map[string]KeyInfo, int64, error) {
 	return cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }

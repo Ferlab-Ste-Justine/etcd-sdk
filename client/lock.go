@@ -7,9 +7,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+type Lock struct {
+	Lease     clientv3.LeaseID
+	Ttl       int64
+	Timestamp time.Time
+}
 
 func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
@@ -28,7 +33,7 @@ func (cli *EtcdClient) releaseLeaseWithRetries(lease clientv3.LeaseID, retries u
 	return nil
 }
 
-func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline time.Time, retries uint64) (*keymodels.Lock, bool, error) {
+func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline time.Time, retries uint64) (*Lock, bool, error) {
 	//If acquisition deadline has expired, fail
 	now := time.Now()
 	if now.After(deadline) {
@@ -67,7 +72,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 	}
 
 	//Create a lock with a transaction as safeguard, in case another acquirer narrowly beat us to the punch
-	lock := keymodels.Lock{
+	lock := Lock{
 		Lease:     leaseResp.ID,
 		Ttl:       opts.Ttl,
 		Timestamp: now,
@@ -121,7 +126,7 @@ type AcquireLockOptions struct {
 	ExtraConditions []clientv3.Cmp
 }
 
-func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*keymodels.Lock, bool, error) {
+func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*Lock, bool, error) {
 	if opts.Ttl == 0 {
 		opts.Ttl = 600
 	}
@@ -136,7 +141,7 @@ func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*keymodels.Lock, bo
 	return cli.acquireLockWithRetries(opts, now.Add(opts.Timeout), cli.Retries)
 }
 
-func (cli *EtcdClient) ReadLock(key string) (*keymodels.Lock, error) {
+func (cli *EtcdClient) ReadLock(key string) (*Lock, error) {
 	info, exists, err := cli.GetKey(key)
 	if err != nil {
 		return nil, err
@@ -145,7 +150,7 @@ func (cli *EtcdClient) ReadLock(key string) (*keymodels.Lock, error) {
 		return nil, errors.New(fmt.Sprintf("Could not acquire lock at key %s as it didn't exist", key))
 	}
 
-	lock := keymodels.Lock{}
+	lock := Lock{}
 	unmarshalErr := json.Unmarshal([]byte(info.Value), &lock)
 	if unmarshalErr != nil {
 		return nil, unmarshalErr

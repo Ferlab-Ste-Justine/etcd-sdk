@@ -9,17 +9,41 @@ import (
 	"io"
 	"time"
 
-	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo, int64, error) {
+type ChunkedKeySnapshot struct {
+	Info     ChunkedKeyInfo
+	Revision int64
+}
+
+type ChunkedKeyInfo struct {
+	Size    int64
+	Count   int64
+	Version int64
+}
+
+type ChunkedKeyPayload struct {
+	Key   string
+	Value io.ReadCloser
+	Size  int64
+}
+
+func (p *ChunkedKeyPayload) Close() error {
+	return p.Value.Close()
+}
+
+func (p *ChunkedKeyPayload) Read(r []byte) (n int, err error) {
+	return p.Value.Read(r)
+}
+
+func (cli *EtcdClient) getChunkedKeyInfo(key string) (*ChunkedKeyInfo, int64, error) {
 	info, exists, err := cli.GetKey(fmt.Sprintf("%s/info", key))
 	if err != nil || (!exists) {
 		return nil, 0, err
 	}
 
-	cKeyInfo := keymodels.ChunkedKeyInfo{}
+	cKeyInfo := ChunkedKeyInfo{}
 	unmarshalErr := json.Unmarshal([]byte(info.Value), &cKeyInfo)
 	if unmarshalErr != nil {
 		return nil, info.ModRevision, unmarshalErr
@@ -28,7 +52,7 @@ func (cli *EtcdClient) getChunkedKeyInfo(key string) (*keymodels.ChunkedKeyInfo,
 	return &cKeyInfo, info.ModRevision, nil
 }
 
-func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKeyInfo, retries uint64) error {
+func (cli *EtcdClient) persistVersionChange(key string, info ChunkedKeyInfo, retries uint64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cli.RequestTimeout)
 	defer cancel()
 
@@ -50,7 +74,7 @@ func (cli *EtcdClient) persistVersionChange(key string, info keymodels.ChunkedKe
 	return err
 }
 
-func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
+func (cli *EtcdClient) PutChunkedKey(key *ChunkedKeyPayload) error {
 	cMaxSize := int64(1024 * 1024)
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key.Key)
 	if infoErr != nil {
@@ -104,7 +128,7 @@ func (cli *EtcdClient) PutChunkedKey(key *keymodels.ChunkedKeyPayload) error {
 	}
 
 	//update chunk info and delete previous version chunks as single transaction
-	return cli.persistVersionChange(key.Key, keymodels.ChunkedKeyInfo{
+	return cli.persistVersionChange(key.Key, ChunkedKeyInfo{
 		Size:    key.Size,
 		Count:   chunks,
 		Version: version + 1,
@@ -116,13 +140,13 @@ type ChunksReader struct {
 	Key      string
 	Index    int64
 	Buffer   *bytes.Buffer
-	Snapshot keymodels.ChunkedKeySnapshot
+	Snapshot ChunkedKeySnapshot
 }
 
 func (r *ChunksReader) Close() error {
 	r.Client = nil
 	r.Buffer = nil
-	r.Snapshot = keymodels.ChunkedKeySnapshot{}
+	r.Snapshot = ChunkedKeySnapshot{}
 	return nil
 }
 
@@ -171,7 +195,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 		Key:    key,
 		Index:  0,
 		Buffer: &buffer,
-		Snapshot: keymodels.ChunkedKeySnapshot{
+		Snapshot: ChunkedKeySnapshot{
 			Info:     *cKeyInfo,
 			Revision: revision,
 		},
@@ -180,7 +204,7 @@ func (cli *EtcdClient) newChunksReader(key string) (*ChunksReader, error) {
 	return &reader, nil
 }
 
-func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, error) {
+func (cli *EtcdClient) GetChunkedKey(key string) (*ChunkedKeyPayload, error) {
 	keyInfo, _, infoErr := cli.getChunkedKeyInfo(key)
 	if infoErr != nil || keyInfo == nil {
 		return nil, infoErr
@@ -191,7 +215,7 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*keymodels.ChunkedKeyPayload, 
 		return nil, rErr
 	}
 
-	payload := keymodels.ChunkedKeyPayload{
+	payload := ChunkedKeyPayload{
 		Key:   key,
 		Value: reader,
 		Size:  reader.Snapshot.Info.Size,

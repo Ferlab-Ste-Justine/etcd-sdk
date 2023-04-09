@@ -4,9 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+type KeyInfo struct {
+	Key            string
+	Value          string
+	Version        int64
+	CreateRevision int64
+	ModRevision    int64
+	Lease          int64
+}
 
 func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
@@ -28,7 +36,7 @@ func (cli *EtcdClient) PutKey(key string, val string) error {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
 
-func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (keymodels.KeyInfo, bool, error) {
+func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (KeyInfo, bool, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
@@ -43,7 +51,7 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 
 	if err != nil {
 		if !shouldRetry(err, retries) {
-			return keymodels.KeyInfo{}, false, err
+			return KeyInfo{}, false, err
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -51,10 +59,10 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 	}
 
 	if len(getRes.Kvs) == 0 {
-		return keymodels.KeyInfo{}, false, nil
+		return KeyInfo{}, false, nil
 	}
 
-	return keymodels.KeyInfo{
+	return KeyInfo{
 		Key:            key,
 		Value:          string(getRes.Kvs[0].Value),
 		Version:        getRes.Kvs[0].Version,
@@ -64,11 +72,11 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 	}, true, nil
 }
 
-func (cli *EtcdClient) GetKey(key string) (keymodels.KeyInfo, bool, error) {
+func (cli *EtcdClient) GetKey(key string) (KeyInfo, bool, error) {
 	return cli.getKeyWithRetries(key, -1, cli.Retries)
 }
 
-func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (keymodels.KeyInfo, bool, error) {
+func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (KeyInfo, bool, error) {
 	return cli.getKeyWithRetries(key, revision, cli.Retries)
 }
 

@@ -4,15 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/Ferlab-Ste-Justine/etcd-sdk/keymodels"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (map[string]keymodels.KeyInfo, int64, error) {
+func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (map[string]KeyInfo, int64, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
-	keys := make(map[string]keymodels.KeyInfo)
+	keys := make(map[string]KeyInfo)
 
 	res, err := cli.Client.Get(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
@@ -26,7 +25,7 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 
 	for _, kv := range res.Kvs {
 		key, value, createRevision, modRevision, version, lease := string(kv.Key), string(kv.Value), kv.CreateRevision, kv.ModRevision, kv.Version, kv.Lease
-		keys[key] = keymodels.KeyInfo{
+		keys[key] = KeyInfo{
 			Key:            key,
 			Value:          value,
 			Version:        version,
@@ -39,7 +38,7 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 	return keys, res.Header.Revision, nil
 }
 
-func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]keymodels.KeyInfo, int64, error) {
+func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]KeyInfo, int64, error) {
 	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
 
