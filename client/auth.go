@@ -24,7 +24,6 @@ func (cli *EtcdClient) getAuthStatusWithRetries(retries uint64) (bool, error) {
 
 /*
 Retrieves the authentication status (enabled or not) of the etcd cluster.
-Note that if the authentication is disabled, this call will only work from a loopback address.
 */
 func (cli *EtcdClient) GetAuthStatus() (bool, error) {
 	return cli.getAuthStatusWithRetries(cli.Retries)
@@ -55,7 +54,6 @@ func (cli *EtcdClient) setAuthStatusWithRetries(enabled bool, retries uint64) er
 
 /*
 Sets the authentication status (enabled or not) of the etcd cluster.
-Note that if the authentication is disabled, this call will only work from a loopback address.
 */
 func (cli *EtcdClient) SetAuthStatus(enable bool) error {
 	return cli.setAuthStatusWithRetries(enable, cli.Retries)

@@ -224,7 +224,7 @@ func (cli *EtcdClient) GetChunkedKey(key string) (*ChunkedKeyPayload, error) {
 	return &payload, nil
 }
 
-func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) error {
+func (cli *EtcdClient) deleteChunkedKeyWithRetries(key string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
@@ -239,7 +239,7 @@ func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) e
 	if err != nil {
 		if shouldRetry(err, retries) {
 			time.Sleep(cli.RetryInterval)
-			return cli.DeleteChunkedKeyWithRetries(key, retries-1)
+			return cli.deleteChunkedKeyWithRetries(key, retries-1)
 		}
 	}
 
@@ -247,5 +247,5 @@ func (cli *EtcdClient) DeleteChunkedKeyWithRetries(key string, retries uint64) e
 }
 
 func (cli *EtcdClient) DeleteChunkedKey(key string) error {
-	return cli.DeleteChunkedKeyWithRetries(key, cli.Retries)
+	return cli.deleteChunkedKeyWithRetries(key, cli.Retries)
 }
