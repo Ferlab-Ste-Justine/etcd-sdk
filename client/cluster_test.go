@@ -82,52 +82,64 @@ func TestSetLeaderStatus(t *testing.T) {
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
 
-	err := cli.SetLeaderStatus("etcd0", true)
-	if err != nil {
-		t.Errorf("Setting etcd0 as leader failed: %s", err.Error())
-	}
-
-	members, membersErr := cli.GetMembers(true)
-	if membersErr != nil {
-		t.Errorf("Getting members failed: %s", membersErr.Error())
-	}
-
-	leaders := 0
-	for _, member := range members.Members {
-		if member.Status.IsLeader {
-			leaders += 1
-			if member.Name != "etcd0" {
-				t.Errorf("Expected etcd0 to be leader after explicitly specifying it, but instead it was %s", member.Name)
+	testSetLeader := func(leaderName string) {
+		err := cli.SetLeaderStatus(leaderName, true)
+		if err != nil {
+			t.Errorf("Setting %s as leader failed: %s", leaderName, err.Error())
+		}
+	
+		members, membersErr := cli.GetMembers(true)
+		if membersErr != nil {
+			t.Errorf("Getting members failed: %s", membersErr.Error())
+		}
+	
+		leaders := 0
+		for _, member := range members.Members {
+			if member.Status.IsLeader {
+				leaders += 1
+				if member.Name != leaderName {
+					t.Errorf("Expected %s to be leader after explicitly specifying it, but instead it was %s", leaderName, member.Name)
+				}
 			}
+		}
+	
+		if leaders != 1 {
+			t.Errorf("Expected 1 leader to be marked in the status replies after specifying a leader, but there were %d", leaders)
 		}
 	}
 
-	if leaders != 1 {
-		t.Errorf("Expected 1 leader to be marked in the status replies after specifying a leader, but there were %d", leaders)
+	for _, leaderName := range []string{"etcd0", "etcd1", "etcd2", "etcd2"} {
+		testSetLeader(leaderName)
 	}
 
-	err = cli.SetLeaderStatus("etcd1", true)
-	if err != nil {
-		t.Errorf("Setting etcd1 as leader failed: %s", err.Error())
-	}
-
-	members, membersErr = cli.GetMembers(true)
-	if membersErr != nil {
-		t.Errorf("Getting members failed: %s", membersErr.Error())
-	}
-
-	leaders = 0
-	for _, member := range members.Members {
-		if member.Status.IsLeader {
-			leaders += 1
-			if member.Name != "etcd1" {
-				t.Errorf("Expected etcd1 to be leader after explicitly specifying it, but instead it was %s", member.Name)
+	testSetNotLeader := func(notLeaderName string) {
+		err := cli.SetLeaderStatus(notLeaderName, false)
+		if err != nil {
+			t.Errorf("Setting %s as not a leader failed: %s", notLeaderName, err.Error())
+		}
+	
+		members, membersErr := cli.GetMembers(true)
+		if membersErr != nil {
+			t.Errorf("Getting members failed: %s", membersErr.Error())
+		}
+	
+		leaders := 0
+		for _, member := range members.Members {
+			if member.Status.IsLeader {
+				leaders += 1
+				if member.Name == notLeaderName {
+					t.Errorf("Expected %s to not be a leader after explicitly specifying it, but it still was", notLeaderName)
+				}
 			}
+		}
+	
+		if leaders != 1 {
+			t.Errorf("Expected 1 leader to be marked in the status replies after specifying a node not to be leader, but there were %d", leaders)
 		}
 	}
 
-	if leaders != 1 {
-		t.Errorf("Expected 1 leader to be marked in the status replies after specifying a leader, but there were %d", leaders)
+	for _, notLeaderName := range []string{"etcd2", "etcd2", "etcd1", "etcd1", "etcd0", "etcd0"} {
+		testSetNotLeader(notLeaderName)
 	}
 
 	teardownTestEnv(t, cli)
