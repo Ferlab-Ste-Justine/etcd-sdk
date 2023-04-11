@@ -15,6 +15,7 @@ type EtcdClient struct {
 	RetryInterval  time.Duration
 	RequestTimeout time.Duration
 	Context        context.Context
+	connOpts       EtcdClientOptions
 }
 
 func (cli *EtcdClient) SetContext(ctx context.Context) *EtcdClient {

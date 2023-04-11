@@ -173,6 +173,7 @@ func (cli *EtcdClient) SetLeaderStatus(name string, isLeader bool) error {
 	}
 
 	leaderFound := false
+	leaderEndpoint := ""
 	eligibleIds := []uint64{}
 	for _, member := range members.Members {
 		if member.Name == name {
@@ -192,9 +193,11 @@ func (cli *EtcdClient) SetLeaderStatus(name string, isLeader bool) error {
 				eligibleIds = append(eligibleIds, member.Id)
 			} else {
 				leaderFound = true
+				leaderEndpoint = member.ClientUrls[0]
 			}
 		} else if member.Status.IsLeader {
 			leaderFound = true
+			leaderEndpoint = member.ClientUrls[0]
 		} else {
 			if (!isLeader) && (!member.IsLearner) && member.Status.IsResponsive {
 				eligibleIds = append(eligibleIds, member.Id)
@@ -210,7 +213,13 @@ func (cli *EtcdClient) SetLeaderStatus(name string, isLeader bool) error {
 		return errors.New("Cannot change leader status as no transfer candidate exists")
 	}
 
-	return cli.moveLeaderWithRetries(eligibleIds[0], cli.Retries)
+	newCli, newCliErr := cli.SetEndpoints([]string{leaderEndpoint})
+	if newCliErr != nil {
+		return newCliErr
+	}
+	defer newCli.Close()
+
+	return newCli.moveLeaderWithRetries(eligibleIds[0], cli.Retries)
 }
 
 /*

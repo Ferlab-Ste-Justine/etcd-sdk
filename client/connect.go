@@ -115,5 +115,12 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 		RetryInterval:  opts.RetryInterval,
 		RequestTimeout: opts.RequestTimeout,
 		Context:        ctx,
+		connOpts:       opts,
 	}, nil
+}
+
+func (cli *EtcdClient) SetEndpoints(endpoints []string) (*EtcdClient, error) {
+	opts := cli.connOpts
+	opts.EtcdEndpoints = endpoints
+	return Connect(cli.Context, opts)
 }

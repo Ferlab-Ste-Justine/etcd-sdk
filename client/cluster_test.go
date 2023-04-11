@@ -76,3 +76,59 @@ func TestGetMembers(t *testing.T) {
 
 	teardownTestEnv(t, cli)
 }
+
+func TestSetLeaderStatus(t *testing.T) {
+	duration, _ := time.ParseDuration("5s")
+	retries := uint64(10)
+	cli := setupTestEnv(t, duration, retries)
+
+	err := cli.SetLeaderStatus("etcd0", true)
+	if err != nil {
+		t.Errorf("Setting etcd0 as leader failed: %s", err.Error())
+	}
+
+	members, membersErr := cli.GetMembers(true)
+	if membersErr != nil {
+		t.Errorf("Getting members failed: %s", membersErr.Error())
+	}
+
+	leaders := 0
+	for _, member := range members.Members {
+		if member.Status.IsLeader {
+			leaders += 1
+			if member.Name != "etcd0" {
+				t.Errorf("Expected etcd0 to be leader after explicitly specifying it, but instead it was %s", member.Name)
+			}
+		}
+	}
+
+	if leaders != 1 {
+		t.Errorf("Expected 1 leader to be marked in the status replies after specifying a leader, but there were %d", leaders)
+	}
+
+	err = cli.SetLeaderStatus("etcd1", true)
+	if err != nil {
+		t.Errorf("Setting etcd1 as leader failed: %s", err.Error())
+	}
+
+	members, membersErr = cli.GetMembers(true)
+	if membersErr != nil {
+		t.Errorf("Getting members failed: %s", membersErr.Error())
+	}
+
+	leaders = 0
+	for _, member := range members.Members {
+		if member.Status.IsLeader {
+			leaders += 1
+			if member.Name != "etcd1" {
+				t.Errorf("Expected etcd1 to be leader after explicitly specifying it, but instead it was %s", member.Name)
+			}
+		}
+	}
+
+	if leaders != 1 {
+		t.Errorf("Expected 1 leader to be marked in the status replies after specifying a leader, but there were %d", leaders)
+	}
+
+	teardownTestEnv(t, cli)
+}
