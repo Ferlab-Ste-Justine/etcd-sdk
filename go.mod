@@ -5,6 +5,7 @@ go 1.18
 require (
 	go.etcd.io/etcd/api/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
+	go.etcd.io/raft/v3 v3.0.0-20230411085617-ffef590a6132
 	google.golang.org/grpc v1.51.0
 )
 

@@ -6,7 +6,9 @@ import (
 
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	raftv3 "go.etcd.io/raft/v3"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type EtcdClient struct {
@@ -33,12 +35,19 @@ func (cli *EtcdClient) Close() {
 
 func shouldRetry(err error, retries uint64) bool {
 	etcdErr, ok := err.(rpctypes.EtcdError)
-	if !ok {
-		return false
-	}
+	if ok {
+		if etcdErr.Code() != codes.Unavailable || retries == 0 {
+			return false
+		}
+	} else {
+		stat, ok := status.FromError(err)
+		if !ok {
+			return false
+		}
 
-	if etcdErr.Code() != codes.Unavailable || retries == 0 {
-		return false
+		if stat.Message() != raftv3.ErrProposalDropped.Error() {
+			return false
+		}
 	}
 
 	return true
