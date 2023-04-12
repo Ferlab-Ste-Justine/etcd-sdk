@@ -144,3 +144,66 @@ func TestSetLeaderStatus(t *testing.T) {
 
 	teardownTestEnv(t, cli)
 }
+
+func TestChangeLeader(t *testing.T) {
+	duration, _ := time.ParseDuration("5s")
+	retries := uint64(10)
+	cli := setupTestEnv(t, duration, retries)
+
+	testChangeLeader := func() {
+		leaderId := uint64(0)
+		leaderFound := false
+
+		members, membersErr := cli.GetMembers(true)
+		if membersErr != nil {
+			t.Errorf("Getting members failed: %s", membersErr.Error())
+		}
+	
+		for _, member := range members.Members {
+			if member.Status.IsLeader {
+				leaderId = member.Id
+				leaderFound = true
+			}
+
+			if !member.Status.IsResponsive {
+				t.Errorf("Tried to change leader and found a member in the cluster was unresponsive")
+			}
+		}
+
+		if !leaderFound {
+			t.Errorf("Tried to change leader, but there were none")
+		}
+
+		err := cli.ChangeLeader()
+		if err != nil {
+			t.Errorf("Tried to change leader and encountered the following error: %s", err.Error())
+		}
+
+		leaderFound = false
+		members, membersErr = cli.GetMembers(true)
+		if membersErr != nil {
+			t.Errorf("Getting members failed: %s", membersErr.Error())
+		}
+
+		for _, member := range members.Members {
+			if member.Status.IsLeader {
+				if member.Id == leaderId {
+					t.Errorf("Expected changing leader to change the leader, but it was still the same")
+				}
+				leaderFound = true
+			}
+
+			if !member.Status.IsResponsive {
+				t.Errorf("Tried to change leader and found a member in the cluster was unresponsive")
+			}
+		}
+
+		if !leaderFound {
+			t.Errorf("Expected a leader to be present after changing the leader, but there was none")
+		}
+	}
+
+	for i:=0; i < 20; i++ {
+		testChangeLeader()
+	}
+}
