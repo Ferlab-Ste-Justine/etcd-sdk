@@ -7,11 +7,11 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (map[string]KeyInfo, int64, error) {
+func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retries uint64) (KeyInfoMap, int64, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
-	keys := make(map[string]KeyInfo)
+	keys := KeyInfoMap(make(map[string]KeyInfo))
 
 	res, err := cli.Client.Get(ctx, key, clientv3.WithRange(rangeEnd))
 	if err != nil {
@@ -38,7 +38,7 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 	return keys, res.Header.Revision, nil
 }
 
-func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (map[string]KeyInfo, int64, error) {
+func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (KeyInfoMap, int64, error) {
 	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
 
