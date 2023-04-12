@@ -206,4 +206,6 @@ func TestChangeLeader(t *testing.T) {
 	for i:=0; i < 20; i++ {
 		testChangeLeader()
 	}
+
+	teardownTestEnv(t, cli)
 }
