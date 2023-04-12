@@ -3,8 +3,28 @@ package client
 import (
 	"context"
 	"testing"
+	"sync"
 	"time"
 )
+
+func keepChangingLeaderInBackground(t *testing.T, cli *EtcdClient, done <-chan struct{}, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	d, _ := time.ParseDuration("1s")
+
+	for true {
+		select {
+		case <-time.After(d):
+			err := cli.ChangeLeader()
+			if err != nil {
+				t.Errorf("Error occured while changing leader in the background: %s", err.Error())
+			}
+		case <-done:
+			return
+		}
+	}
+}
 
 func setupTestEnv(t *testing.T, duration time.Duration, retries uint64) *EtcdClient {
 	cli, err := Connect(context.Background(), EtcdClientOptions{
