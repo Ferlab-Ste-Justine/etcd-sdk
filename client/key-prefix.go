@@ -87,17 +87,17 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPre
 }
 
 func (cli *EtcdClient) DiffBetweenPrefixes(srcPrefix string, dstPrefix string) (KeyDiff, error) {
-	src, _, srcErr := cli.GetKeyRange(srcPrefix, clientv3.GetPrefixRangeEnd(srcPrefix))
+	src, srcErr := cli.GetKeyRange(srcPrefix, clientv3.GetPrefixRangeEnd(srcPrefix))
 	if srcErr != nil {
 		return KeyDiff{}, srcErr
 	}
 
-	dst, _, dstErr := cli.GetKeyRange(dstPrefix, clientv3.GetPrefixRangeEnd(dstPrefix))
+	dst, dstErr := cli.GetKeyRange(dstPrefix, clientv3.GetPrefixRangeEnd(dstPrefix))
 	if dstErr != nil {
 		return KeyDiff{}, dstErr
 	}
 
-	return GetKeyDiff(src.ToValueMap(srcPrefix), dst.ToValueMap(dstPrefix)), nil
+	return GetKeyDiff(src.Keys.ToValueMap(srcPrefix), dst.Keys.ToValueMap(dstPrefix)), nil
 }
 
 func (cli *EtcdClient) applyDiffToPrefixWithRetries(prefix string, diff KeyDiff, retries uint64) error {
@@ -142,22 +142,22 @@ func (cli *EtcdClient) ApplyDiffToPrefix(prefix string, diff KeyDiff) error {
 }
 
 func (cli *EtcdClient) DiffPrefixWithMap(prefix string, inputKeys map[string]string, inputIsSource bool) (KeyDiff, error) {
-	prefixKeys, _, err := cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
+	prefixKeys, err := cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 	if err != nil {
 		return KeyDiff{}, err
 	}
 
 	if inputIsSource {
-		return GetKeyDiff(inputKeys, prefixKeys.ToValueMap(prefix)), nil
+		return GetKeyDiff(inputKeys, prefixKeys.Keys.ToValueMap(prefix)), nil
 	}
 
-	return GetKeyDiff(prefixKeys.ToValueMap(prefix), inputKeys), nil
+	return GetKeyDiff(prefixKeys.Keys.ToValueMap(prefix), inputKeys), nil
 }
 
 func (cli *EtcdClient) DeletePrefix(prefix string) error {
 	return cli.DeleteKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }
 
-func (cli *EtcdClient) GetPrefix(prefix string) (KeyInfoMap, int64, error) {
+func (cli *EtcdClient) GetPrefix(prefix string) (KeyRangeInfo, error) {
 	return cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }
