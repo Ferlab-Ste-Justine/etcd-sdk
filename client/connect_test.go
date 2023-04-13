@@ -7,8 +7,20 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	failures := 0
-	duration, _ := time.ParseDuration("1s")
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+
+	duration, _ := time.ParseDuration("5s")
 	_, err := Connect(context.Background(), EtcdClientOptions{
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
@@ -28,18 +40,14 @@ func TestConnect(t *testing.T) {
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
 		CaCertPath:        "../test/certs/ca.pem",
-		EtcdEndpoints:     []string{"127.0.0.11:3379", "127.0.0.12:3379", "127.0.0.13:3379"},
+		EtcdEndpoints:     []string{"127.0.0.11:3369", "127.0.0.12:3369", "127.0.0.13:3369"},
 		ConnectionTimeout: duration,
 		RequestTimeout:    duration,
 		RetryInterval:     duration,
 		Retries:           5,
 	})
 
-	if err != nil {
-		failures += 1
-	}
-
-	if failures != 0 {
+	if err == nil {
 		t.Errorf("Connection test failed. Connection with wrong parameters should not have been successful")
 	}
 }

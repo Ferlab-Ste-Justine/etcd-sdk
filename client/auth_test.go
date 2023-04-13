@@ -8,6 +8,19 @@ import (
 )
 
 func TestAuthEnableDisable(t *testing.T) {
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+
 	retryInterval, _ := time.ParseDuration("1s")
 	timeouts, _ := time.ParseDuration("30s")
 	cli, err := Connect(context.Background(), EtcdClientOptions{
@@ -80,9 +93,4 @@ func TestAuthEnableDisable(t *testing.T) {
 	}
 	close(done)
 	wg.Wait()
-
-	err = cli.DeleteUser("root")
-	if err != nil {
-		t.Errorf("Auth test failed at the root user cleanup stage: %s", err.Error())
-	}
 }

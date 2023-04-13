@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"google.golang.org/grpc/connectivity"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -107,6 +108,17 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 
 	if connErr != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to connect to etcd servers: %s", connErr.Error()))
+	}
+
+	connDeadline := time.NewTimer(opts.ConnectionTimeout)
+	defer connDeadline.Stop()
+	for cli.ActiveConnection().GetState() == connectivity.Connecting || cli.ActiveConnection().GetState() == connectivity.TransientFailure{
+		select {
+		case <-connDeadline.C:
+			cli.Close()
+			return nil, errors.New("Failed to establish connection to etcd servers in time")
+		case <-time.After(10 * time.Nanosecond):
+		}
 	}
 
 	return &EtcdClient{

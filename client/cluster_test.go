@@ -6,6 +6,19 @@ import (
 )
 
 func TestGetMembers(t *testing.T) {
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+
 	duration, _ := time.ParseDuration("5s")
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
@@ -73,11 +86,22 @@ func TestGetMembers(t *testing.T) {
 	if leaders != 1 {
 		t.Errorf("Expected 1 leader to be marked in the status replies, but there were %d", leaders)
 	}
-
-	teardownTestEnv(t, cli)
 }
 
 func TestSetLeaderStatus(t *testing.T) {
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+
 	duration, _ := time.ParseDuration("5s")
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
@@ -141,11 +165,22 @@ func TestSetLeaderStatus(t *testing.T) {
 	for _, notLeaderName := range []string{"etcd2", "etcd2", "etcd1", "etcd1", "etcd0", "etcd0"} {
 		testSetNotLeader(notLeaderName)
 	}
-
-	teardownTestEnv(t, cli)
 }
 
 func TestChangeLeader(t *testing.T) {
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+
 	duration, _ := time.ParseDuration("5s")
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
@@ -206,6 +241,4 @@ func TestChangeLeader(t *testing.T) {
 	for i:=0; i < 20; i++ {
 		testChangeLeader()
 	}
-
-	teardownTestEnv(t, cli)
 }
