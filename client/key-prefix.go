@@ -141,19 +141,6 @@ func (cli *EtcdClient) ApplyDiffToPrefix(prefix string, diff KeyDiff) error {
 	return cli.applyDiffToPrefixWithRetries(prefix, diff, cli.Retries)
 }
 
-func (cli *EtcdClient) DiffPrefixWithMap(prefix string, inputKeys map[string]string, inputIsSource bool) (KeyDiff, error) {
-	prefixKeys, err := cli.GetKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
-	if err != nil {
-		return KeyDiff{}, err
-	}
-
-	if inputIsSource {
-		return GetKeyDiff(inputKeys, prefixKeys.Keys.ToValueMap(prefix)), nil
-	}
-
-	return GetKeyDiff(prefixKeys.Keys.ToValueMap(prefix), inputKeys), nil
-}
-
 func (cli *EtcdClient) DeletePrefix(prefix string) error {
 	return cli.DeleteKeyRange(prefix, clientv3.GetPrefixRangeEnd(prefix))
 }

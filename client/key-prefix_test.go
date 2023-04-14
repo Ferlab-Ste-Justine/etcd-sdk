@@ -150,15 +150,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 }
 
-func TestDiffPrefixWithMap(t *testing.T) {
-	//TODO
-}
-
 func TestApplyDiffToPrefix(t *testing.T) {
-	//TODO
-}
-
-func TestDiffBetweenPrefixes(t *testing.T) {
 	//TODO
 }
 
