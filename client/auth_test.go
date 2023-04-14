@@ -91,6 +91,7 @@ func TestAuthEnableDisable(t *testing.T) {
 			t.Errorf("Auth test failed. Expected auth to be disabled after disabling it and it wasn't.")
 		}
 	}
+	
 	close(done)
 	wg.Wait()
 }

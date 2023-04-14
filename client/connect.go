@@ -84,7 +84,6 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 		}
 	}
 
-	//Connection
 	var cli *clientv3.Client
 	var connErr error
 

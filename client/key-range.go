@@ -2,10 +2,24 @@ package client
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+type KeyInfoMap map[string]KeyInfo
+
+func (info *KeyInfoMap) ToValueMap(prefixTrim string) map[string]string {
+	res := make(map[string]string)
+
+	for key, val := range *info {
+		key := strings.TrimPrefix(key, prefixTrim)
+		res[key] = val.Value
+	}
+
+	return res
+}
 
 type KeyRangeInfo struct {
 	Keys KeyInfoMap

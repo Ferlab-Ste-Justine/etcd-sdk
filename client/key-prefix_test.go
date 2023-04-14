@@ -20,7 +20,7 @@ func TestGetPrefix(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("5s")
+	duration, _ := time.ParseDuration("10s")
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
 	
@@ -96,7 +96,7 @@ func TestDeletePrefix(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("5s")
+	duration, _ := time.ParseDuration("10s")
 	retries := uint64(10)
 	cli := setupTestEnv(t, duration, retries)
 	
@@ -151,7 +151,116 @@ func TestDeletePrefix(t *testing.T) {
 }
 
 func TestApplyDiffToPrefix(t *testing.T) {
-	//TODO
+	tearDown, launchErr := launchTestEtcdCluster("../test")
+	if launchErr != nil {
+		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
+		return
+	}
+
+	defer func() {
+		errs := tearDown()
+		if len(errs) > 0 {
+			t.Errorf("Errors occured tearing down etcd cluster: %s", errs[0].Error())
+		}
+	}()
+	
+	duration, _ := time.ParseDuration("10s")
+	retries := uint64(10)
+	cli := setupTestEnv(t, duration, retries)
+
+	applyAndClean := func() {
+		prefix := "/inside/"
+
+		apply := KeyDiff{
+			Inserts: map[string]string{
+				"al": "allo",
+				"by": "byebye",
+				"co": "come",
+			},
+			Updates: map[string]string{},
+			Deletions: []string{},
+		}
+
+		applyErr := cli.ApplyDiffToPrefix(prefix, apply)
+		if applyErr != nil {
+			t.Errorf("Apply Diff to Prefix test failed. The following error occured during an apply diff to prefix operation: %s", applyErr.Error())
+		}
+
+		info, infoErr := cli.GetPrefix(prefix)
+		if infoErr != nil {
+			t.Errorf("Apply Diff to Prefix test failed. The following error occured during a get prefix operation: %s", infoErr.Error())
+		}
+
+		valMap := info.Keys.ToValueMap(prefix)
+
+		expected := apply.Inserts
+
+		if len(valMap) != len(expected) {
+			t.Errorf("Apply Diff to Prefix test failed. Expected %d keys in range after apply and there were %d", len(expected), len(valMap))
+		}
+
+		for key, val := range expected {
+			mapVal, ok := valMap[key]
+			if (!ok) || mapVal != val {
+				t.Errorf("Apply Diff to Prefix test failed. One of the elements in the prefix was not as expected")
+			}
+		}
+
+		apply = KeyDiff{
+			Inserts: map[string]string{
+				"do": "done",
+				"ex": "expect",
+			},
+			Updates: map[string]string{"co": "correctme"},
+			Deletions: []string{"by"},
+		}
+
+		applyErr = cli.ApplyDiffToPrefix(prefix, apply)
+		if applyErr != nil {
+			t.Errorf("Apply Diff to Prefix test failed. The following error occured during an apply diff to prefix operation: %s", applyErr.Error())
+		}
+
+		info, infoErr = cli.GetPrefix(prefix)
+		if infoErr != nil {
+			t.Errorf("Apply Diff to Prefix test failed. The following error occured during a get prefix operation: %s", infoErr.Error())
+		}
+
+		valMap = info.Keys.ToValueMap(prefix)
+
+		expected = map[string]string{
+			"al": "allo",
+			"co": "correctme",
+			"do": "done",
+			"ex": "expect",
+		}
+
+		if len(valMap) != len(expected) {
+			t.Errorf("Apply Diff to Prefix test failed. Expected %d keys in range after apply and there were %d", len(expected), len(valMap))
+		}
+
+		for key, val := range expected {
+			mapVal, ok := valMap[key]
+			if (!ok) || mapVal != val {
+				t.Errorf("Apply Diff to Prefix test failed. One of the elements in the prefix was not as expected")
+			}
+		}
+
+		delErr := cli.DeletePrefix(prefix)
+		if delErr != nil {
+			t.Errorf("Apply Diff to Prefix test failed. Deleting prefix returned error: %s.", delErr.Error())
+		}
+	}
+
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	go keepChangingLeaderInBackground(t, cli, done, &wg)
+
+	for i:=0; i < 300; i++ {
+		applyAndClean()
+	}
+
+	close(done)
+	wg.Wait()
 }
 
 func TestWatchPrefixChanges(t *testing.T) {
