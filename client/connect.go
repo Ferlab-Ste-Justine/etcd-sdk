@@ -111,13 +111,15 @@ func Connect(ctx context.Context, opts EtcdClientOptions) (*EtcdClient, error) {
 
 	connDeadline := time.NewTimer(opts.ConnectionTimeout)
 	defer connDeadline.Stop()
-	for cli.ActiveConnection().GetState() == connectivity.Connecting || cli.ActiveConnection().GetState() == connectivity.TransientFailure{
+	state := cli.ActiveConnection().GetState()
+	for state == connectivity.Connecting || state == connectivity.TransientFailure || state == connectivity.Idle {
 		select {
 		case <-connDeadline.C:
 			cli.Close()
 			return nil, errors.New("Failed to establish connection to etcd servers in time")
 		case <-time.After(10 * time.Nanosecond):
 		}
+		state = cli.ActiveConnection().GetState()
 	}
 
 	return &EtcdClient{

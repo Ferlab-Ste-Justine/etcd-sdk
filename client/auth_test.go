@@ -22,7 +22,7 @@ func TestAuthEnableDisable(t *testing.T) {
 	}()
 
 	retryInterval, _ := time.ParseDuration("1s")
-	timeouts, _ := time.ParseDuration("30s")
+	timeouts, _ := time.ParseDuration("10s")
 	cli, err := Connect(context.Background(), EtcdClientOptions{
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
@@ -91,7 +91,7 @@ func TestAuthEnableDisable(t *testing.T) {
 			t.Errorf("Auth test failed. Expected auth to be disabled after disabling it and it wasn't.")
 		}
 	}
-	
+
 	close(done)
 	wg.Wait()
 }

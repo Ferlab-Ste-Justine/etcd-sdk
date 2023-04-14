@@ -20,9 +20,10 @@ func TestGetPrefix(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("10s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 	
 	prefix := "/inside/"
 	prefixContent := map[string]string{
@@ -96,9 +97,10 @@ func TestDeletePrefix(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("10s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 	
 	prefix := "/inside/"
 	prefixContent := map[string]string{
@@ -164,9 +166,10 @@ func TestApplyDiffToPrefix(t *testing.T) {
 		}
 	}()
 	
-	duration, _ := time.ParseDuration("10s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 
 	applyAndClean := func() {
 		prefix := "/inside/"

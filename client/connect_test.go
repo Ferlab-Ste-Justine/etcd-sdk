@@ -36,7 +36,7 @@ func TestConnect(t *testing.T) {
 		t.Errorf("Connection test failed. Connection with right parameters should have been successful: %s", err.Error())
 	}
 
-	_, err = Connect(context.Background(), EtcdClientOptions{
+	cli, connErr := Connect(context.Background(), EtcdClientOptions{
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
 		CaCertPath:        "../test/certs/ca.pem",
@@ -47,7 +47,7 @@ func TestConnect(t *testing.T) {
 		Retries:           5,
 	})
 
-	if err == nil {
-		t.Errorf("Connection test failed. Connection with wrong parameters should not have been successful")
+	if connErr == nil {
+		t.Errorf("Connection test failed. Connection with wrong parameters should not have been successful. Connection status is: %v", cli.Client.ActiveConnection().GetState())
 	}
 }

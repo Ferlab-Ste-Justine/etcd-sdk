@@ -19,9 +19,10 @@ func TestGetMembers(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("5s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 
 	members, membersErr := cli.GetMembers(true)
 	if membersErr != nil {
@@ -102,9 +103,10 @@ func TestSetLeaderStatus(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("5s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 
 	testSetLeader := func(leaderName string) {
 		err := cli.SetLeaderStatus(leaderName, true)
@@ -181,9 +183,10 @@ func TestChangeLeader(t *testing.T) {
 		}
 	}()
 
-	duration, _ := time.ParseDuration("5s")
+	retryInterval, _ := time.ParseDuration("1s")
+	timeouts, _ := time.ParseDuration("10s")
 	retries := uint64(10)
-	cli := setupTestEnv(t, duration, retries)
+	cli := setupTestEnv(t, timeouts, retryInterval, retries)
 
 	testChangeLeader := func() {
 		leaderId := uint64(0)

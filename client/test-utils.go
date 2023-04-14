@@ -155,7 +155,7 @@ func keepChangingLeaderInBackground(t *testing.T, cli *EtcdClient, done <-chan s
 	}
 }
 
-func setupTestEnv(t *testing.T, timeouts time.Duration, retries uint64) *EtcdClient {
+func setupTestEnv(t *testing.T, timeouts time.Duration, retryInt time.Duration, retries uint64) *EtcdClient {
 	cli, err := Connect(context.Background(), EtcdClientOptions{
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
@@ -163,7 +163,7 @@ func setupTestEnv(t *testing.T, timeouts time.Duration, retries uint64) *EtcdCli
 		EtcdEndpoints:     []string{"127.0.0.1:3379", "127.0.0.2:3379", "127.0.0.3:3379"},
 		ConnectionTimeout: timeouts,
 		RequestTimeout:    timeouts,
-		RetryInterval:     timeouts,
+		RetryInterval:     retryInt,
 		Retries:           retries,
 	})
 
