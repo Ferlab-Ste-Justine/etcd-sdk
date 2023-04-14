@@ -8,8 +8,16 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
+/*
+A map of KeyInfo values with each key in the map being the KeyInfo's key.
+This is used as a separate type mostly for convenience methods
+*/
 type KeyInfoMap map[string]KeyInfo
 
+/*
+Flatten a KeyInfoMap structure to a simple map of key/value pairs.
+The method accepts a prefix argument that will be trimmed from the beginning of the keys.
+*/
 func (info *KeyInfoMap) ToValueMap(prefixTrim string) map[string]string {
 	res := make(map[string]string)
 
@@ -21,6 +29,11 @@ func (info *KeyInfoMap) ToValueMap(prefixTrim string) map[string]string {
 	return res
 }
 
+/*
+Result from a key range query.
+It returns a KeyInfoMap structure containing the result.
+It also contains a revision indication the revision of the etcd store at the moment the results were returned.
+*/
 type KeyRangeInfo struct {
 	Keys KeyInfoMap
 	Revision int64
@@ -63,6 +76,10 @@ func (cli *EtcdClient) getKeyRangeWithRetries(key string, rangeEnd string, retri
 	}, nil
 }
 
+/*
+Get all the keys within a certain range of values.
+If you want to get all the keys prefixed by a certain value, consider using the GetPrefix method instead.
+*/
 func (cli *EtcdClient) GetKeyRange(key string, rangeEnd string) (KeyRangeInfo, error) {
 	return cli.getKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
@@ -84,6 +101,10 @@ func (cli *EtcdClient) deleteKeyRangeWithRetries(key string, rangeEnd string, re
 	return nil
 }
 
+/*
+Delete all the keys within a certain range of values.
+If you want to delete all the keys prefixed by a certain value, consider using the DeletePrefix method instead.
+*/
 func (cli *EtcdClient) DeleteKeyRange(key string, rangeEnd string) error {
 	return cli.deleteKeyRangeWithRetries(key, rangeEnd, cli.Retries)
 }
