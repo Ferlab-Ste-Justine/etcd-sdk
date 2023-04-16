@@ -24,33 +24,43 @@ type WatchInfo struct {
 	Deletions []string
 }
 
-type PrefixChangesResult struct {
+type WatchNotification struct {
 	Changes WatchInfo
 	Error   error
 }
 
-func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPrefix bool) <-chan PrefixChangesResult {
-	outChan := make(chan PrefixChangesResult)
+type WatchOptions struct {
+	Revision int64
+	TrimPrefix bool
+}
+
+func (cli *EtcdClient) WatchPrefix(prefix string, opts WatchOptions) <-chan WatchNotification {
+	outChan := make(chan WatchNotification)
 
 	go func() {
 		ctx, cancel := context.WithCancel(cli.Context)
 		defer cancel()
 		defer close(outChan)
 
-		wc := cli.Client.Watch(ctx, prefix, clientv3.WithPrefix(), clientv3.WithRev(revision))
+		watchOpts := []clientv3.OpOption{clientv3.WithPrefix()}
+		if opts.Revision > 0 {
+			watchOpts = append(watchOpts, clientv3.WithRev(opts.Revision))
+		}
+
+		wc := cli.Client.Watch(ctx, prefix, watchOpts...)
 		if wc == nil {
-			outChan <- PrefixChangesResult{Error: errors.New("Failed to watch prefix changes: Watcher could not be established")}
+			outChan <- WatchNotification{Error: errors.New("Failed to watch prefix changes: Watcher could not be established")}
 			return
 		}
 
 		for res := range wc {
 			err := res.Err()
 			if err != nil {
-				outChan <- PrefixChangesResult{Error: errors.New(fmt.Sprintf("Failed to watch prefix changes: %s", err.Error()))}
+				outChan <- WatchNotification{Error: errors.New(fmt.Sprintf("Failed to watch prefix changes: %s", err.Error()))}
 				return
 			}
 
-			output := PrefixChangesResult{
+			output := WatchNotification{
 				Error: nil,
 				Changes: WatchInfo{
 					Upserts:   make(map[string]KeyWatchInfo),
@@ -60,7 +70,7 @@ func (cli *EtcdClient) WatchPrefixChanges(prefix string, revision int64, trimPre
 
 			for _, ev := range res.Events {
 				key := string(ev.Kv.Key)
-				if trimPrefix {
+				if opts.TrimPrefix {
 					key = strings.TrimPrefix(key, prefix)
 				}
 				if ev.Type == mvccpb.DELETE {
