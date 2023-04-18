@@ -7,15 +7,28 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
+/*
+Structure holding information returned on a specific key
+*/
 type KeyInfo struct {
+	//Key
 	Key            string
+	//Value stored at the key
 	Value          string
+	//Etcd version of the key, which is incremented when a key changes and reset to 0 when it is deleted
 	Version        int64
+	//Revision of the etcd store when the key was created
 	CreateRevision int64
+	//Revision of the etcd store when the key was last modified
 	ModRevision    int64
+	//Id of the lease that created the key if the key was created with a lease
 	Lease          int64
 }
 
+/*
+Returns whether the KeyInfo structure stores a key that was found.
+If the key is not found, an empty KeyInfo structure will be returned which will be detected by this method.
+*/
 func (info *KeyInfo) Found() bool {
 	return info.CreateRevision > 0
 }
@@ -36,6 +49,9 @@ func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64)
 	return nil
 }
 
+/*
+Upsert the given value in the key
+*/
 func (cli *EtcdClient) PutKey(key string, val string) error {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
@@ -76,10 +92,18 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 	}, nil
 }
 
+/*
+Options that get passed to GetKey method.
+*/
 type GetKeyOptions struct {
+	//Specifies that the value of the key at a given store revision is wanted.
+	//Can be left at the default 0 value if the latest version of the key is desired.
 	Revision int64
 }
 
+/*
+Get information on the given key including the value.
+*/
 func (cli *EtcdClient) GetKey(key string, opts GetKeyOptions) (KeyInfo, error) {
 	return cli.getKeyWithRetries(key, opts.Revision, cli.Retries)
 }
@@ -101,6 +125,9 @@ func (cli *EtcdClient) deleteKeyWithRetries(key string, retries uint64) error {
 	return nil
 }
 
+/*
+Delete a key.
+*/
 func (cli *EtcdClient) DeleteKey(key string) error {
 	return cli.deleteKeyWithRetries(key, cli.Retries)
 }
