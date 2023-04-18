@@ -72,7 +72,7 @@ func ErrorIsRetryable(err error) bool {
 			return false
 		}
 
-		if stat.Message() != raftv3.ErrProposalDropped.Error() {
+		if stat.Code() != codes.Unavailable && stat.Message() != raftv3.ErrProposalDropped.Error() {
 			return false
 		}
 	}
