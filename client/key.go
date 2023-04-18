@@ -16,6 +16,10 @@ type KeyInfo struct {
 	Lease          int64
 }
 
+func (info *KeyInfo) Found() bool {
+	return info.CreateRevision > 0
+}
+
 func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) error {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
@@ -36,14 +40,14 @@ func (cli *EtcdClient) PutKey(key string, val string) error {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
 
-func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (KeyInfo, bool, error) {
+func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uint64) (KeyInfo, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
 	var err error
 	var getRes *clientv3.GetResponse
 
-	if revision == -1 {
+	if revision <= 0 {
 		getRes, err = cli.Client.Get(ctx, key)
 	} else {
 		getRes, err = cli.Client.Get(ctx, key, clientv3.WithRev(revision))
@@ -51,7 +55,7 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 
 	if err != nil {
 		if !shouldRetry(err, retries) {
-			return KeyInfo{}, false, err
+			return KeyInfo{}, err
 		}
 
 		time.Sleep(cli.RetryInterval)
@@ -59,7 +63,7 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 	}
 
 	if len(getRes.Kvs) == 0 {
-		return KeyInfo{}, false, nil
+		return KeyInfo{}, nil
 	}
 
 	return KeyInfo{
@@ -69,15 +73,15 @@ func (cli *EtcdClient) getKeyWithRetries(key string, revision int64, retries uin
 		CreateRevision: getRes.Kvs[0].CreateRevision,
 		ModRevision:    getRes.Kvs[0].ModRevision,
 		Lease:          getRes.Kvs[0].Lease,
-	}, true, nil
+	}, nil
 }
 
-func (cli *EtcdClient) GetKey(key string) (KeyInfo, bool, error) {
-	return cli.getKeyWithRetries(key, -1, cli.Retries)
+type GetKeyOptions struct {
+	Revision int64
 }
 
-func (cli *EtcdClient) GetKeyAtRevision(key string, revision int64) (KeyInfo, bool, error) {
-	return cli.getKeyWithRetries(key, revision, cli.Retries)
+func (cli *EtcdClient) GetKey(key string, opts GetKeyOptions) (KeyInfo, error) {
+	return cli.getKeyWithRetries(key, opts.Revision, cli.Retries)
 }
 
 func (cli *EtcdClient) deleteKeyWithRetries(key string, retries uint64) error {

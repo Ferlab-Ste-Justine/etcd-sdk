@@ -38,8 +38,8 @@ func (p *ChunkedKeyPayload) Read(r []byte) (n int, err error) {
 }
 
 func (cli *EtcdClient) getChunkedKeyInfo(key string) (*ChunkedKeyInfo, int64, error) {
-	info, exists, err := cli.GetKey(fmt.Sprintf("%s/info", key))
-	if err != nil || (!exists) {
+	info, err := cli.GetKey(fmt.Sprintf("%s/info", key), GetKeyOptions{})
+	if err != nil || (!info.Found()) {
 		return nil, 0, err
 	}
 
@@ -161,11 +161,11 @@ func (r *ChunksReader) Read(p []byte) (n int, err error) {
 	}
 
 	chunkKey := fmt.Sprintf("%s/chunks/v%d/%d", r.Key, r.Snapshot.Info.Version, r.Index)
-	kInfo, kExists, kErr := r.Client.GetKey(chunkKey)
+	kInfo, kErr := r.Client.GetKey(chunkKey, GetKeyOptions{})
 	if kErr != nil {
 		return 0, kErr
 	}
-	if !kExists {
+	if !kInfo.Found() {
 		return 0, errors.New(fmt.Sprintf("%s chunk key not found", chunkKey))
 	}
 

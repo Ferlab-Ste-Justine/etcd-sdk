@@ -43,7 +43,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 
 	//Exploratory get without getting a lease to see if a lock already exists
 	//Seems more efficient not to create a lease unless likelyhood is high we can get a lock
-	_, exists, err := cli.GetKey(opts.Key)
+	info, err := cli.GetKey(opts.Key, GetKeyOptions{})
 	if err != nil {
 		if !shouldRetry(err, retries) {
 			return nil, false, err
@@ -53,7 +53,7 @@ func (cli *EtcdClient) acquireLockWithRetries(opts AcquireLockOptions, deadline 
 		return cli.acquireLockWithRetries(opts, deadline, retries-1)
 	}
 
-	if exists {
+	if info.Found() {
 		time.Sleep(opts.RetryInterval)
 		return cli.acquireLockWithRetries(opts, deadline, retries)
 	}
@@ -144,11 +144,11 @@ func (cli *EtcdClient) AcquireLock(opts AcquireLockOptions) (*Lock, bool, error)
 }
 
 func (cli *EtcdClient) ReadLock(key string) (*Lock, error) {
-	info, exists, err := cli.GetKey(key)
+	info, err := cli.GetKey(key, GetKeyOptions{})
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
+	if !info.Found() {
 		return nil, errors.New(fmt.Sprintf("Could not acquire lock at key %s as it didn't exist", key))
 	}
 
