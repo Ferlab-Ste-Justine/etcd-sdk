@@ -10,7 +10,10 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-type KeyWatchInfo struct {
+/*
+Information on key that got upserted as reported by the watch function
+*/
+type WatchKeyInfo struct {
 	Value          string
 	Version        int64
 	CreateRevision int64
@@ -18,19 +21,36 @@ type KeyWatchInfo struct {
 	Lease          int64
 }
 
+/*
+Reported changes to key(s) of interest by the watch function
+*/
 type WatchInfo struct {
-	Upserts   map[string]KeyWatchInfo
+	//Inserted or updated keys. The map keys are the keys that were upserted.
+	Upserts   map[string]WatchKeyInfo
+	//List of keys that were deleted
 	Deletions []string
 }
 
+/*
+Events returned by the watch function.
+It can report either a change or an error.
+*/
 type WatchNotification struct {
+	//Changes that are reported if it is not an error
 	Changes WatchInfo
+	//Error that is reported if it is an error
 	Error   error
 }
 
+/*
+Options for the watch method
+*/
 type WatchOptions struct {
+	//If non-zero, will watch from the given etcd store revision. Useful for retroactively watching past changes.
 	Revision   int64
+	//If true, it will assume the key argument is a prefix and will watch for all changes affecting keys with that prefix
 	IsPrefix   bool
+	//If true, it will trim the prefix value from all the keys in the reported changes. Useful if you are interested only in relative keys.
 	TrimPrefix bool
 }
 
@@ -70,7 +90,7 @@ func (cli *EtcdClient) Watch(wKey string, opts WatchOptions) <-chan WatchNotific
 			output := WatchNotification{
 				Error: nil,
 				Changes: WatchInfo{
-					Upserts:   make(map[string]KeyWatchInfo),
+					Upserts:   make(map[string]WatchKeyInfo),
 					Deletions: []string{},
 				},
 			}
@@ -86,7 +106,7 @@ func (cli *EtcdClient) Watch(wKey string, opts WatchOptions) <-chan WatchNotific
 						key,
 					)
 				} else if ev.Type == mvccpb.PUT {
-					output.Changes.Upserts[key] = KeyWatchInfo{
+					output.Changes.Upserts[key] = WatchKeyInfo{
 						Value: string(ev.Kv.Value),
 						Version: ev.Kv.Version,
 						CreateRevision: ev.Kv.CreateRevision,
