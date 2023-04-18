@@ -33,26 +33,27 @@ func (info *KeyInfo) Found() bool {
 	return info.CreateRevision > 0
 }
 
-func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) error {
+func (cli *EtcdClient) putKeyWithRetries(key string, val string, retries uint64) (int64, error) {
 	ctx, cancel := context.WithTimeout(cli.Context, cli.RequestTimeout)
 	defer cancel()
 
-	_, err := cli.Client.Put(ctx, key, val)
+	resp, err := cli.Client.Put(ctx, key, val)
 	if err != nil {
 		if !shouldRetry(err, retries) {
-			return err
+			return 0, err
 		}
 
 		time.Sleep(cli.RetryInterval)
 		return cli.putKeyWithRetries(key, val, retries-1)
 	}
-	return nil
+	return resp.Header.Revision, nil
 }
 
 /*
-Upsert the given value in the key
+Upsert the given value in the key. 
+Returns the revision of the store right after the key was upserted.
 */
-func (cli *EtcdClient) PutKey(key string, val string) error {
+func (cli *EtcdClient) PutKey(key string, val string) (int64, error) {
 	return cli.putKeyWithRetries(key, val, cli.Retries)
 }
 

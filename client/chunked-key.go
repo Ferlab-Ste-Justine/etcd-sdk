@@ -110,7 +110,7 @@ func (cli *EtcdClient) PutChunkedKey(key *ChunkedKeyPayload) error {
 				return readErr
 			}
 
-			putErr := cli.PutKey(cKey, string(buf))
+			_, putErr := cli.PutKey(cKey, string(buf))
 			if putErr != nil {
 				return putErr
 			}
@@ -120,7 +120,7 @@ func (cli *EtcdClient) PutChunkedKey(key *ChunkedKeyPayload) error {
 				return readErr
 			}
 
-			putErr := cli.PutKey(cKey, string(buf[:key.Size%cMaxSize]))
+			_, putErr := cli.PutKey(cKey, string(buf[:key.Size%cMaxSize]))
 			if putErr != nil {
 				return putErr
 			}

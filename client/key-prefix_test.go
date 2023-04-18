@@ -34,7 +34,7 @@ func TestGetPrefix(t *testing.T) {
 	}
 
 	for key, val := range prefixContent {
-		putErr := cli.PutKey(prefix+ key, val)
+		_, putErr := cli.PutKey(prefix+ key, val)
 		if putErr != nil {
 			t.Errorf("Get Prefix test failed. Put test setup returned and error: %s.", putErr.Error())
 		}
@@ -49,7 +49,7 @@ func TestGetPrefix(t *testing.T) {
 	}
 
 	for key, val := range prefixNotContent {
-		putErr := cli.PutKey(notPrefix + key, val)
+		_, putErr := cli.PutKey(notPrefix + key, val)
 		if putErr != nil {
 			t.Errorf("Get Prefix test failed. Put test setup returned and error: %s.", putErr.Error())
 		}
@@ -111,7 +111,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 
 	for key, val := range prefixContent {
-		putErr := cli.PutKey(prefix+ key, val)
+		_, putErr := cli.PutKey(prefix+ key, val)
 		if putErr != nil {
 			t.Errorf("Delete Prefix test failed. Put test setup returned and error: %s.", putErr.Error())
 		}
@@ -126,7 +126,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 
 	for key, val := range prefixNotContent {
-		putErr := cli.PutKey(notPrefix + key, val)
+		_, putErr := cli.PutKey(notPrefix + key, val)
 		if putErr != nil {
 			t.Errorf("Delete Prefix test failed. Put test setup returned and error: %s.", putErr.Error())
 		}
@@ -264,8 +264,4 @@ func TestApplyDiffToPrefix(t *testing.T) {
 
 	close(done)
 	wg.Wait()
-}
-
-func TestWatchPrefixChanges(t *testing.T) {
-	//TODO
 }
