@@ -1,17 +1,15 @@
 # About
 
-We developed a couple of projects that are interacting with etcd.
+Provides some high level functionality on top of the pre-existing etcd v3 client to fulfill the need of our various projets that need to interact with etcd.
 
-There is some repetitive boilerplate between projects to abstract away lower level details of the etcd client.
+While the etcd v3 client is very powerful and flexible, we found that it entails some amount of repetitive boilerplate code in projects that depend on it.
 
-This module is meant to centralise all that boilerplate in one location and keep the dependent projects simpler.
+We aim to make our dependent projects simpler by abstracting that boilerplate into higher level reusable abstractions.
 
 # Project Status
 
-This project is new and not yet stable.
+This project is not yet fully stable.
 
-We still have a couple more things to import from other projects and all the api surface has not been fully validated yet.
+Tested, documented structures and methods in the sdk are less likely to change as much in the future, although we are not yet prepared to make significant backward compatibility commitments on the api yet.
 
-Furthermore, we are not yet completely happy with the api contracts and will probably break many them in the future in a backward-incompatible manner.
-
-Use at your own risk.
+The existing api surface has been battle-tested against stable etcd clusters in all of its dependent projects, though it has not been well vetted against failing etcd nodes as we haven't had to deal with those all that much yet. We aim to increase our test coverage to cover more of those scenarios in the future.
