@@ -3,10 +3,12 @@ package client
 import (
 	"testing"
 	"time"
+
+	"github.com/Ferlab-Ste-Justine/etcd-sdk/testutils"
 )
 
 func TestGetMembers(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -90,7 +92,7 @@ func TestGetMembers(t *testing.T) {
 }
 
 func TestSetLeaderStatus(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -170,7 +172,7 @@ func TestSetLeaderStatus(t *testing.T) {
 }
 
 func TestChangeLeader(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return

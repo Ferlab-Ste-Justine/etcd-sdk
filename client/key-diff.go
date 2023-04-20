@@ -1,5 +1,7 @@
 package client
 
+import "regexp"
+
 /*
 Differential between two key spaces
 */
@@ -17,6 +19,38 @@ Returns true if a KeyDiff Structure indicates not modifications to the destinati
 */
 func (diff *KeyDiff) IsEmpty() bool {
 	return len(diff.Inserts) == 0 && len(diff.Updates) == 0 && len(diff.Deletions) == 0
+}
+
+/*
+Filter the content of the KeyDiff structure and keep only the keys that match a given regex.
+The result of the filter is returned into a separate structure.
+*/
+func (diff *KeyDiff) FilterKeys(filter *regexp.Regexp) *KeyDiff {
+	copy := KeyDiff{
+		Inserts: map[string]string{},
+		Updates: map[string]string{},
+		Deletions: []string{},
+	}
+
+	for key, val := range diff.Inserts {
+		if filter.MatchString(key) {
+			copy.Inserts[key] = val
+		}
+	}
+
+	for key, val := range diff.Updates {
+		if filter.MatchString(key) {
+			copy.Updates[key] = val
+		}
+	}
+
+	for _, key :=  range diff.Deletions {
+		if filter.MatchString(key) {
+			copy.Deletions = append(copy.Deletions, key)
+		}
+	}
+
+	return &copy
 }
 
 /*

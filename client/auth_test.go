@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 	"sync"
+
+	"github.com/Ferlab-Ste-Justine/etcd-sdk/testutils"
 )
 
 func TestAuthEnableDisable(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -26,7 +28,7 @@ func TestAuthEnableDisable(t *testing.T) {
 	cli, err := Connect(context.Background(), EtcdClientOptions{
 		ClientCertPath:    "../test/certs/root.pem",
 		ClientKeyPath:     "../test/certs/root.key",
-		CaCertPath:        "../test/certs/ca.pem",
+		CaCertPath:        "../test/certs/ca.crt",
 		EtcdEndpoints:     []string{"127.0.0.1:3379", "127.0.0.2:3379", "127.0.0.3:3379"},
 		ConnectionTimeout: timeouts,
 		RequestTimeout:    timeouts,

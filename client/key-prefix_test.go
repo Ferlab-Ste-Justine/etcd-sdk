@@ -4,10 +4,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Ferlab-Ste-Justine/etcd-sdk/testutils"
 )
 
 func TestGetPrefix(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -84,7 +86,7 @@ func TestGetPrefix(t *testing.T) {
 }
 
 func TestDeletePrefix(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -153,7 +155,7 @@ func TestDeletePrefix(t *testing.T) {
 }
 
 func TestApplyDiffToPrefix(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return

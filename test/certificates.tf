@@ -44,13 +44,13 @@ module "root_certificate" {
 
 resource "local_file" "ca_cert" {
   content = module.ca.certificate
-  filename = "${path.module}/certs/ca.pem"
+  filename = "${path.module}/certs/ca.crt"
   file_permission = "0600"
 }
 
 resource "local_file" "server_cert" {
   content = tls_locally_signed_cert.certificate.cert_pem
-  filename = "${path.module}/certs/server.pem"
+  filename = "${path.module}/certs/server.crt"
   file_permission = "0600"
 }
 

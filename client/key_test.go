@@ -4,10 +4,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Ferlab-Ste-Justine/etcd-sdk/testutils"
 )
 
 func TestGetKey(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -87,7 +89,7 @@ func TestGetKey(t *testing.T) {
 }
 
 func TestPutKey(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
@@ -142,7 +144,7 @@ func TestPutKey(t *testing.T) {
 }
 
 func TestDeleteKey(t *testing.T) {
-	tearDown, launchErr := launchTestEtcdCluster("../test")
+	tearDown, launchErr := testutils.LaunchTestEtcdCluster("../test", testutils.EtcdTestClusterOpts{})
 	if launchErr != nil {
 		t.Errorf("Error occured launching test etcd cluster: %s", launchErr.Error())
 		return
