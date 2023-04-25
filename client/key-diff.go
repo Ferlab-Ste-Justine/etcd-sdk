@@ -59,7 +59,7 @@ type KeyDiffTransform func(key string) string
 Change the keys of a KeyDiff structure by applying a function on each key.
 The result of the filter is returned into a separate structure.
 */
-func (diff *KeyDiff) TranformKeys(fn KeyDiffTransform) *KeyDiff {
+func (diff *KeyDiff) TransformKeys(fn KeyDiffTransform) *KeyDiff {
 	copy := KeyDiff{
 		Inserts: map[string]string{},
 		Updates: map[string]string{},
