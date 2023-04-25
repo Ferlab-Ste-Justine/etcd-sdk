@@ -1,7 +1,5 @@
 package client
 
-import "regexp"
-
 /*
 Differential between two key spaces
 */
@@ -21,11 +19,13 @@ func (diff *KeyDiff) IsEmpty() bool {
 	return len(diff.Inserts) == 0 && len(diff.Updates) == 0 && len(diff.Deletions) == 0
 }
 
+type KeyDiffFilter func(key string) bool
+
 /*
-Filter the content of the KeyDiff structure and keep only the keys that match a given regex.
+Filter the keys of a KeyDiff structure by applying a function on each key and only keeping the keys for which the function returns true.
 The result of the filter is returned into a separate structure.
 */
-func (diff *KeyDiff) FilterKeys(filter *regexp.Regexp) *KeyDiff {
+func (diff *KeyDiff) FilterKeys(fn KeyDiffFilter) *KeyDiff {
 	copy := KeyDiff{
 		Inserts: map[string]string{},
 		Updates: map[string]string{},
@@ -33,21 +33,49 @@ func (diff *KeyDiff) FilterKeys(filter *regexp.Regexp) *KeyDiff {
 	}
 
 	for key, val := range diff.Inserts {
-		if filter.MatchString(key) {
+		if fn(key) {
 			copy.Inserts[key] = val
 		}
 	}
 
 	for key, val := range diff.Updates {
-		if filter.MatchString(key) {
+		if fn(key) {
 			copy.Updates[key] = val
 		}
 	}
 
 	for _, key :=  range diff.Deletions {
-		if filter.MatchString(key) {
+		if fn(key) {
 			copy.Deletions = append(copy.Deletions, key)
 		}
+	}
+
+	return &copy
+}
+
+type KeyDiffTransform func(key string) string
+
+/*
+Change the keys of a KeyDiff structure by applying a function on each key.
+The result of the filter is returned into a separate structure.
+*/
+func (diff *KeyDiff) TranformKeys(fn KeyDiffTransform) *KeyDiff {
+	copy := KeyDiff{
+		Inserts: map[string]string{},
+		Updates: map[string]string{},
+		Deletions: []string{},
+	}
+
+	for key, val := range diff.Inserts {
+		copy.Inserts[fn(key)] = val
+	}
+
+	for key, val := range diff.Updates {
+		copy.Updates[fn(key)] = val
+	}
+
+	for _, key :=  range diff.Deletions {
+		copy.Deletions = append(copy.Deletions, fn(key))
 	}
 
 	return &copy
