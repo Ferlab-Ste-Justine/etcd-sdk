@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package keypb;
+option go_package="etcd-sdk/keypb";
+
+enum KeyDiffChangeType {
+    UNSPECIFIED = 0;
+    INSERT = 1;
+    UPDATE = 2;
+    DELETION = 3;
+}
+
+message KeyDiffOverview {
+    int64 inserts = 1;
+    int64 updates = 2;
+    int64 deletions = 3;
+}
+
+message KeyDiffChange {
+    string key = 1;
+    bytes value = 2;
+    KeyDiffChangeType type = 3;
+}
+
+message KeyDiffChanges {
+    repeated KeyDiffChange changes = 1;
+}
+
+message KeyDiff {
+    oneof content {
+        KeyDiffChanges changes = 1;
+        KeyDiffOverview overview = 2;
+    }
+}
+
+message SendKeyDiffRequest {
+    KeyDiff key_diff = 1;
+}
+
+message SendKeyDiffResponse {}
+
+service KeyPushService {
+    rpc SendKeyDiff(stream SendKeyDiffRequest) returns (SendKeyDiffResponse) {};
+}

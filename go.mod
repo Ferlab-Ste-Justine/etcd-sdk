@@ -7,6 +7,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.8
 	go.etcd.io/raft/v3 v3.0.0-20230411085617-ffef590a6132
 	google.golang.org/grpc v1.51.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
@@ -22,5 +23,4 @@ require (
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 )
