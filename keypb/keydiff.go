@@ -67,6 +67,7 @@ func ProcessSendKeyDiffRequests(reqCh <-chan *SendKeyDiffRequest) <-chan KeyDiff
 
 		if int64(len(diff.Inserts)) != inserts || int64(len(diff.Updates)) != updates || int64(len(diff.Deletions)) != deletions {
 			resCh <- KeyDiffResult{Error: ErrInvalidChangeType}
+			return
 		}
 
 		resCh <- KeyDiffResult{KeyDiff: diff}
