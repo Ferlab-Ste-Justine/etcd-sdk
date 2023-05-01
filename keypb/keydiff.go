@@ -18,7 +18,7 @@ type KeyDiffResult struct {
 	Error error
 }
 
-func GetKeyDiffFromRequests(reqCh <-chan *SendKeyDiffRequest) <-chan KeyDiffResult {
+func ProcessSendKeyDiffRequests(reqCh <-chan *SendKeyDiffRequest) <-chan KeyDiffResult {
 	inserts := int64(0)
 	updates := int64(0)
 	deletions := int64(0)
