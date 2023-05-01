@@ -13,6 +13,10 @@ var (
 	ErrInvalidChangeType = errors.New("Change type for one of the changes was not valid")
 )
 
+func IsApiContractError(err error) bool {
+	return err == ErrKeyDiffRequestNotOverview || err == ErrKeyDiffRequestNotChanges || err == ErrKeyDiffRequestOpsMiscount || err == ErrInvalidChangeType
+}
+
 type KeyDiffResult struct {
 	KeyDiff client.KeyDiff
 	Error error
