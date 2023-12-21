@@ -32,6 +32,19 @@ type WatchInfo struct {
 }
 
 /*
+Apply the changes of a WatchInfo structure to a map of strings
+*/
+func (info *WatchInfo) ApplyOn(dest map[string]string) {
+	for key, val := range info.Upserts {
+		dest[key] = val.Value
+	}
+
+	for _, key := range info.Deletions {
+		delete(dest, key)
+	}
+}
+
+/*
 Events returned by the watch function.
 It can report either a change or an error.
 */
