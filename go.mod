@@ -1,6 +1,6 @@
 module github.com/Ferlab-Ste-Justine/etcd-sdk
 
-go 1.18
+go 1.20
 
 require (
 	go.etcd.io/etcd/api/v3 v3.5.11
