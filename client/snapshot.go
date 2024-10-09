@@ -7,6 +7,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/snapshot"
+	"go.uber.org/zap"
 )
 
 func (cli *EtcdClient) Snapshot(onLeader bool, path string, snapshotTimeout time.Duration) error {
@@ -41,7 +42,9 @@ func (cli *EtcdClient) Snapshot(onLeader bool, path string, snapshotTimeout time
         return tlsConfsErr
     }
 
-	return snapshot.Save(ctx, nil, clientv3.Config{
+	logger := zap.NewExample()
+	defer logger.Sync()
+	return snapshot.Save(ctx, logger, clientv3.Config{
 		Context:     ctx,
 		Username:    cli.connOpts.Username,
 		Password:    cli.connOpts.Password,
