@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"google.golang.org/grpc/connectivity"
@@ -21,6 +23,8 @@ type EtcdClientOptions struct {
 	ClientCertPath    string
 	//If tls is enabled and certificate authentication is used, path to the client private key file
 	ClientKeyPath     string
+	//If tls is enabled and certificate authentication is used, alternate argument to provide a path to a file containing the client cert and the client key concatenanted after
+	ClientCertKeyPath string
 	//If tls is enabled, path to the CA certificate used to sign etcd's server certificates. 
 	CaCertPath        string
 	//If password authentication is used, name of the user.
@@ -46,11 +50,34 @@ func getTlsConfigs(opts EtcdClientOptions) (*tls.Config, error) {
 
 	//User credentials
 	if opts.Username == "" {
-		certData, err := tls.LoadX509KeyPair(opts.ClientCertPath, opts.ClientKeyPath)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Failed to load user credentials: %s", err.Error()))
+		if opts.ClientCertKeyPath != "" {
+			fData, fileErr := os.ReadFile(opts.ClientCertKeyPath)
+			if fileErr != nil {
+				return nil, errors.New(fmt.Sprintf("Failed to load file containing client cert and key: %s", fileErr.Error()))
+			}
+
+			certBlock, rest := pem.Decode(fData)
+			if certBlock == nil {
+				return nil, errors.New("Failed to read certificate from file containing client cert and key")
+			}
+
+			keyBlock, _ := pem.Decode(rest)
+			if keyBlock == nil {
+				return nil, errors.New("Failed to read key from file containing client cert and key")
+			}
+
+			certData, err := tls.X509KeyPair(pem.EncodeToMemory(certBlock), pem.EncodeToMemory(keyBlock))
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Failed to load user credentials: %s", err.Error()))
+			}
+			(*tlsConf).Certificates = []tls.Certificate{certData}
+		} else {
+			certData, err := tls.LoadX509KeyPair(opts.ClientCertPath, opts.ClientKeyPath)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Failed to load user credentials: %s", err.Error()))
+			}
+			(*tlsConf).Certificates = []tls.Certificate{certData}
 		}
-		(*tlsConf).Certificates = []tls.Certificate{certData}
 	}
 
 	(*tlsConf).InsecureSkipVerify = false
