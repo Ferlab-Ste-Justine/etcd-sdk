@@ -53,8 +53,8 @@ func (cli *EtcdClient) SetEndpoints(endpoints []string) (*EtcdClient, error) {
 /*
 Close the underlying connection to the etcd cluster that the client as.
 */
-func (cli *EtcdClient) Close() {
-	cli.Client.Close()
+func (cli *EtcdClient) Close() error {
+	return cli.Client.Close()
 }
 
 /*

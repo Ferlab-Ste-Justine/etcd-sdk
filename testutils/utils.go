@@ -118,13 +118,11 @@ func LaunchTestEtcdCluster(testDir string, opts EtcdTestClusterOpts) (TeardownTe
 		return func() []error {return nil}, err
 	}
 
-	
 	initalClusterArr := []string{}
 	for _, member := range members {
 		initalClusterArr = append(initalClusterArr, fmt.Sprintf("%s=https://%s:%d", member.Name, member.Ip, member.PeerPort))
 	}
 	initialCluster := strings.Join(initalClusterArr, ",")
-
 
 	cmds := []*exec.Cmd{}
 	for _, member := range members {
